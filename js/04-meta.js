@@ -11,7 +11,8 @@
                 { id: 'relic_vamp',  name: '吸血之爪', desc: '造成伤害的 5% 回复生命', icon: 'heart-pulse', cost: 400 },
                 { id: 'relic_thorn', name: '荆棘光环', desc: '受到近战伤害时反弹 20% 给攻击者', icon: 'shield-half', cost: 400 },
                 { id: 'relic_greed', name: '贪婪之石', desc: '经验球自动飞向玩家（无需靠近）', icon: 'magnet', cost: 300 },
-                { id: 'relic_bomb',  name: '定时炸弹', desc: '每 10 秒在玩家位置爆炸（伤害随等级提升）', icon: 'bomb', cost: 450 }
+                { id: 'relic_bomb',  name: '定时炸弹', desc: '每 10 秒在玩家位置爆炸（伤害随等级提升）', icon: 'bomb', cost: 450 },
+                { id: 'relic_deathmark', name: '死神之指', desc: '解锁死神之指：标记目标并抹杀（手动可标记 Boss）', icon: 'skull', cost: 5999 }
             ];
             // ===== 成就系统（局外碎片奖励） =====
             const ACHIEVEMENTS = [
@@ -32,7 +33,6 @@
                 try { localStorage.setItem('rogue_ach', JSON.stringify(achievementsDone)); } catch(e) {}
             }
             function awardAchievement(id) {
-                if (game.deathMark.enabled) return;
                 if (achievementsDone[id]) return;
                 const a = ACHIEVEMENTS.find(x => x.id === id);
                 if (!a) return;
@@ -62,19 +62,45 @@
                     if (!hasRanged && game.bossKilledCount > 0) awardAchievement('melee_master');
                 }
             }
-            let metaData = loadMeta();
+            // ===== 存档签名（防小白改数值：篡改后签名不匹配，数据视为无效并清除） =====
+            const META_SALT = 'r0gue.m3ta!sig#v1';
+            function metaSign(obj) {
+                const raw = JSON.stringify(obj) + META_SALT;
+                let a = 0x811c9dc5, b = 0x01000193;
+                for (let i = 0; i < raw.length; i++) {
+                    const c = raw.charCodeAt(i);
+                    a = ((a ^ c) * 16777619) >>> 0;
+                    b = ((b + c) * 2654435761) >>> 0;
+                }
+                return a.toString(16) + b.toString(16);
+            }
 
             function loadMeta() {
                 try {
                     const raw = localStorage.getItem('rogue_meta');
                     if (raw) {
                         const d = JSON.parse(raw);
-                        if (!d.relics) d.relics = {};
-                        return d;
+                        const sig = localStorage.getItem('rogue_meta_sig');
+                        if (sig) {
+                            if (sig === metaSign(d)) {
+                                if (!d.relics) d.relics = {};
+                                return d;
+                            }
+                            // 签名不匹配：视为篡改数据，直接清除
+                            localStorage.removeItem('rogue_meta');
+                            localStorage.removeItem('rogue_meta_sig');
+                        } else {
+                            // 旧版存档：一次性补签名（此后篡改即失效）
+                            if (!d.relics) d.relics = {};
+                            localStorage.setItem('rogue_meta_sig', metaSign(d));
+                            return d;
+                        }
                     }
                 } catch(e) {}
                 return { shards: 0, upgrades: {}, relics: {} };
             }
+
+            let metaData = loadMeta();
             function hasRelic(id) { return !!(metaData.relics && metaData.relics[id]); }
             function buyRelic(id) {
                 const r = META_RELICS.find(x => x.id === id);
@@ -86,7 +112,10 @@
                 return true;
             }
             function saveMeta() {
-                try { localStorage.setItem('rogue_meta', JSON.stringify(metaData)); } catch(e) {}
+                try {
+                    localStorage.setItem('rogue_meta', JSON.stringify(metaData));
+                    localStorage.setItem('rogue_meta_sig', metaSign(metaData));
+                } catch(e) {}
             }
             function metaLevel(id) { return metaData.upgrades[id] || 0; }
             function metaUpgradeCost(id) {

@@ -206,8 +206,59 @@
         #ui-buttons button { display: flex; align-items: center; justify-content: center; }
         #ui-buttons button svg { width: 18px; height: 18px; }
 
-/* ===== 主菜单：死神之指开关（正式版启用入口，开启后本局无法获得碎片/成就） ===== */
-.menu-dm-row { align-items: center; justify-content: center; margin: 10px 0 4px; }
-.menu-dm { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: bold; color: var(--brown); cursor: pointer; }
-.menu-dm input { accent-color: var(--orange-deep); width: 16px; height: 16px; cursor: pointer; }
-.menu-dm-hint { color: var(--coral); font-size: 11px; font-weight: normal; margin-left: 4px; }
+/* ===== 死神之指购买弹窗（与灵魂宝库风格统一） ===== */
+#dm-buy-modal {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    display: none; pointer-events: all; z-index: 120;
+}
+.dm-modal-box {
+    background: var(--cream); border: 4px solid var(--orange-deep);
+    border-radius: 22px; padding: 20px 24px;
+    box-shadow: 0 10px 0 rgba(0,0,0,0.22), 0 0 50px rgba(255,60,60,0.4);
+    width: min(440px, 92vw); max-width: 92vw; max-height: 86vh; overflow-y: auto;
+    text-align: center;
+}
+.dm-modal-title {
+    color: #c0392b; font-size: 1.5em; margin: 0 0 8px; font-weight: bold;
+    letter-spacing: 0.05em; text-shadow: 0 2px 0 rgba(255,255,255,0.55);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.dm-modal-desc { color: var(--brown); font-size: 13px; line-height: 1.6; margin-bottom: 12px; }
+.dm-modal-modes { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.dm-mode {
+    border-radius: 14px; padding: 10px 14px; text-align: left;
+    border: 3px solid var(--orange); box-shadow: 0 3px 0 rgba(180,90,20,0.25);
+}
+.dm-mode-manual { background: linear-gradient(160deg, var(--cream-2), #ffe0b0); }
+.dm-mode-auto { background: linear-gradient(160deg, #f3e2f5, #e6c9ee); border-color: #b06aff; box-shadow: 0 3px 0 rgba(120,60,190,0.25); }
+.dm-mode-name { font-weight: bold; color: var(--brown); font-size: 14px; margin-bottom: 3px; }
+.dm-mode-auto .dm-mode-name { color: #5a2a7a; }
+.dm-mode-desc { color: var(--brown-soft); font-size: 12px; line-height: 1.5; }
+.dm-mode-note { color: #c0392b; font-size: 12px; line-height: 1.5; margin-top: 4px; font-weight: bold; }
+.dm-mode-auto .dm-mode-note { color: #8a4bd8; }
+.dm-modal-foot { color: var(--brown-soft); font-size: 12px; margin-bottom: 14px; line-height: 1.5; }
+.dm-modal-warn {
+    color: #c0392b; font-size: 12px; font-weight: bold; line-height: 1.6; margin-bottom: 14px;
+    background: rgba(255,60,60,0.08); border: 2px solid rgba(214,48,49,0.4);
+    border-radius: 10px; padding: 8px 10px;
+}
+.dm-modal-btns { display: flex; justify-content: center; gap: 10px; }
+.dm-modal-btns button {
+    padding: 10px 22px; font-size: 14px; border: 3px solid var(--brown);
+    border-radius: 22px; cursor: pointer; font-weight: bold; transition: all 0.15s;
+    box-shadow: 0 5px 0 rgba(0,0,0,0.25);
+}
+.dm-btn-cancel { background: linear-gradient(180deg, #e8e0d8, #c8bdb2); color: var(--brown); }
+.dm-btn-confirm { background: linear-gradient(180deg, #ff8a5c, #d63031); color: #fff; }
+.dm-modal-btns button:hover { transform: translateY(-2px); box-shadow: 0 7px 0 rgba(0,0,0,0.25); }
+.dm-modal-btns button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.25); }
+
+/* ===== 暂停面板：返回主菜单按钮 ===== */
+.pause-btn {
+    margin-top: 14px; padding: 8px 22px; font-size: 14px; font-weight: bold;
+    border: 3px solid var(--brown); border-radius: 16px; cursor: pointer;
+    background: linear-gradient(180deg, var(--amber), var(--orange)); color: #fff;
+    box-shadow: 0 4px 0 #a86a10; transition: all 0.15s;
+}
+.pause-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #a86a10; }
+.pause-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #a86a10; }

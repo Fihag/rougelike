@@ -170,6 +170,7 @@
                 game.shadowTrails = [];
                 game.noBossDrop = false;
                 game.deathMark.targets = [];
+                if (typeof syncDeathMarkUI === 'function') syncDeathMarkUI();
                 dbg.pauseGame = false;
                 if ($inp('dbg-pause')) $inp('dbg-pause').checked = false;
                 btnPause.innerHTML = ICONS.pause;

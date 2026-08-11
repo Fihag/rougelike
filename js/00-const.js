@@ -21,6 +21,10 @@
             const btnPause = document.getElementById('btn-pause');
             const btnMute = document.getElementById('btn-mute');
             const btnDeathMark = document.getElementById('btn-death-mark');
+            const pauseMenuBtn = document.getElementById('pause-menu-btn');
+            const dmBuyModal = document.getElementById('dm-buy-modal');
+            const dmBuyCancel = document.getElementById('dm-buy-cancel');
+            const dmBuyConfirm = document.getElementById('dm-buy-confirm');
             const hudHpFill = document.getElementById('hud-hp-fill');
             const hudHpText = document.getElementById('hud-hp-text');
             const hudXpFill = document.getElementById('hud-xp-fill');

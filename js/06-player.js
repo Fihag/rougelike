@@ -1,3 +1,11 @@
+            // ==================== 灵魂碎片结算（死亡或返回主菜单时调用） ====================
+            function settleShards() {
+                let shardMult = (DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal).shardMult || 1;
+                game.soulShards = Math.floor(Math.max(0, Math.floor(game.kills / 2 / 2) * shardMult));
+                if (game.soulShards > 0) { metaData.shards = (metaData.shards || 0) + game.soulShards; saveMeta(); }
+                return game.soulShards;
+            }
+
             // ==================== 玩家类 ====================
             class Player {
                 constructor() {
@@ -93,12 +101,9 @@
                             const t = Math.floor(game.time);
                             if (t > bestT) { localStorage.setItem('rogue_best_time', t); isNew = true; }
                             if (game.kills > bestK) { localStorage.setItem('rogue_best_kills', game.kills); isNew = true; }
-                            // 灵魂碎片结算：击杀数 /2 再 /2，再减 30（乘难度倍率，最低 0，最终取整）
-                            let shardMult = (DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal).shardMult || 1;
-                            game.soulShards = Math.floor(Math.max(0, Math.floor((game.kills / 2 / 2) - 30) * shardMult));
-                            if (game.deathMark.enabled) game.soulShards = 0;
+                            // 灵魂碎片结算
+                            game.soulShards = settleShards();
                             goShards.textContent = game.soulShards;
-                            if (game.soulShards > 0) { metaData.shards = (metaData.shards || 0) + game.soulShards; saveMeta(); }
                         } catch(e) {}
                         goBestTime.textContent = Math.max(bestT, Math.floor(game.time));
                         goBestKills.textContent = Math.max(bestK, game.kills);

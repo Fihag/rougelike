@@ -558,6 +558,11 @@
                         btn.textContent = `${r.cost} 碎片`;
                         btn.disabled = (metaData.shards || 0) < r.cost;
                         btn.addEventListener('click', () => {
+                            // 死神之指：先弹出使用说明确认框，再购买
+                            if (r.id === 'relic_deathmark') {
+                                dmBuyModal.style.display = 'flex';
+                                return;
+                            }
                             if (buyRelic(r.id)) {
                                 renderMetaPanel();
                                 menuShards.textContent = `灵魂碎片：${metaData.shards || 0}`;
@@ -569,12 +574,13 @@
                 }
             }
             btnOpenMeta.addEventListener('click', () => { renderMetaPanel(); menuOverlay.style.display = 'none'; metaPanel.style.display = 'flex'; });
-            metaClose.addEventListener('click', () => { metaPanel.style.display = 'none'; menuOverlay.style.display = 'flex'; renderMenu(); });
+            metaClose.addEventListener('click', () => { metaPanel.style.display = 'none'; menuOverlay.style.display = 'flex'; renderMenu(); syncDeathMarkUI(); });
             // 清空存档：清除灵魂碎片/永久升级/圣物/成就/最佳记录
             metaReset.addEventListener('click', () => {
                 if (!confirm('确定清空所有存档？灵魂碎片、永久升级、圣物、成就与最佳记录都将清除！')) return;
                 try {
                     localStorage.removeItem('rogue_meta');
+                    localStorage.removeItem('rogue_meta_sig');
                     localStorage.removeItem('rogue_ach');
                     localStorage.removeItem('rogue_best_time');
                     localStorage.removeItem('rogue_best_kills');
@@ -587,8 +593,10 @@
             function showMenu() {
                 renderMenu();
                 dbg.pauseGame = false;
+                btnPause.innerHTML = ICONS.pause;
                 menuOverlay.style.display = 'flex';
                 game.state = 'menu';
+                syncDeathMarkUI();
             }
             menuStart.addEventListener('click', () => {
                 metaPanel.style.display = 'none';
@@ -616,7 +624,7 @@
                 const dbgPauseEl = $inp('dbg-pause'); if (dbgPauseEl) dbgPauseEl.checked = dbg.pauseGame;
             });
             btnMute.addEventListener('click', () => { btnMute.innerHTML = sound.toggleMute() ? ICONS['volume-x'] : ICONS['volume-2']; });
-            // ===== 死神之指按钮：点击切换模式（无升级机制，初始即满级） =====
+            // ===== 死神之指按钮：点击切换模式（需在灵魂宝库购买解锁） =====
             btnDeathMark.addEventListener('click', (e) => {
                 if (!game.deathMark.enabled) return;
                 game.deathMark.mode = game.deathMark.mode === 'auto' ? 'manual' : 'auto';
@@ -624,6 +632,21 @@
                 game.warningText = '死神之指：' + (game.deathMark.mode === 'auto' ? '自动' : '手动') + '模式';
                 game.warningTimer = 1.0;
             });
+            // ===== 死神之指 UI 同步：正式版需购买解锁；Debug 版尊重调试面板开关 =====
+            function syncDeathMarkUI() {
+                const unlocked = hasRelic('relic_deathmark');
+                let on = unlocked;
+                const dbgDM = $inp('dbg-deathmark');
+                if (typeof dbgInit === 'function' && dbgDM) on = dbgDM.checked;
+                game.deathMark.enabled = on;
+                btnDeathMark.style.display = on ? '' : 'none';
+                if (on) {
+                    game.deathMark.mode = 'auto';
+                    btnDeathMark.classList.add('death-auto');
+                } else {
+                    btnDeathMark.classList.remove('death-auto');
+                }
+            }
             window.addEventListener('keydown', (e) => {
                 if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')) return;
                 if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
@@ -633,23 +656,32 @@
                 }
                 else if (e.key === 'm' || e.key === 'M') { btnMute.innerHTML = sound.toggleMute() ? ICONS['volume-x'] : ICONS['volume-2']; }
             });
-            // ===== 主菜单：死神之指开关（开启后本局无法获得碎片/成就） =====
-            const menuDeathmark = document.getElementById('menu-deathmark');
-            if (menuDeathmark) {
-                menuDeathmark.addEventListener('change', (e) => {
-                    const on = e.target.checked;
-                    game.deathMark.enabled = on;
-                    btnDeathMark.style.display = on ? '' : 'none';
-                    if (!on) {
-                        for (const t of game.deathMark.targets) t.deathMarked = false;
-                        game.deathMark.targets = [];
-                    } else {
-                        game.deathMark.mode = 'auto';
-                        btnDeathMark.classList.add('death-auto');
+            // ===== 暂停面板：返回主菜单（结算本局碎片） =====
+            if (pauseMenuBtn) {
+                pauseMenuBtn.addEventListener('click', () => {
+                    if (game.state !== 'playing') return;
+                    const got = settleShards();
+                    dbg.pauseGame = false;
+                    btnPause.innerHTML = ICONS.pause;
+                    const dbgPauseEl = $inp('dbg-pause'); if (dbgPauseEl) dbgPauseEl.checked = false;
+                    showMenu();
+                    if (got > 0) {
+                        game.warningText = `已结算 ${got} 灵魂碎片`;
+                        game.warningTimer = 1.5;
                     }
-                    if (game.player) {
-                        game.warningText = on ? '死神之指已开启（本局无法获得碎片/成就）' : '死神之指已关闭';
-                        game.warningTimer = 1.2;
+                });
+            }
+            // ===== 死神之指购买弹窗 =====
+            if (dmBuyModal) {
+                dmBuyCancel.addEventListener('click', () => { dmBuyModal.style.display = 'none'; });
+                dmBuyConfirm.addEventListener('click', () => {
+                    if (buyRelic('relic_deathmark')) {
+                        dmBuyModal.style.display = 'none';
+                        renderMetaPanel();
+                        menuShards.textContent = `灵魂碎片：${metaData.shards || 0}`;
+                        game.warningText = '已解锁死神之指！';
+                        game.warningTimer = 1.5;
+                        sound.play('levelup');
                     }
                 });
             }
