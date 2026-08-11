@@ -1,0 +1,655 @@
+            function update(dt) {
+                if (game.state === 'gameover') return;
+                const cappedDt = Math.min(dt, 0.1);
+                if (game.state === 'playing') {
+                    const player = game.player;
+                    player.update(cappedDt);
+                    updateWeapons(player, cappedDt);
+                    // 更新火焰区域
+                    if (game.fireZones) {
+                        for (let i = game.fireZones.length - 1; i >= 0; i--) {
+                            const zone = game.fireZones[i];
+                            zone.remaining -= cappedDt;
+                            if (zone.remaining <= 0) {
+                                game.fireZones.splice(i, 1);
+                                continue;
+                            }
+                            zone.tickTimer = (zone.tickTimer || 0) + cappedDt;
+                            if (zone.tickTimer >= (zone.tickRate || 0.5)) {
+                                zone.tickTimer -= (zone.tickRate || 0.5);
+                                if (dist(player, zone) < zone.radius + player.size) {
+                                    player.takeDamage(zone.damage);
+                                }
+                            }
+                            // 传送门减速区域：减速敌人
+                            if (zone.isSlowZone) {
+                                for (const e of game.enemies) {
+                                    if (!e.alive) continue;
+                                    if (Math.hypot(e.x - zone.x, e.y - zone.y) < zone.radius) {
+                                        e.applySlow(0.6, 0.6);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // 更新星落燃烧区域
+                    if (game.burningZones) {
+                        for (let i = game.burningZones.length - 1; i >= 0; i--) {
+                            const zone = game.burningZones[i];
+                            zone.remaining -= cappedDt;
+                            if (zone.remaining <= 0) { game.burningZones.splice(i, 1); continue; }
+                            zone.tickTimer = (zone.tickTimer || 0) + cappedDt;
+                            const tickRate = zone.tickRate || 0.5;
+                            if (zone.tickTimer >= tickRate) {
+                                zone.tickTimer -= tickRate;
+                                for (const e of game.enemies) {
+                                    if (!e.alive) continue;
+                                    if (Math.hypot(e.x - zone.x, e.y - zone.y) < zone.radius) {
+                                        e.takeDamage(zone.damage, 'fire');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // 更新暗影刺客残影：减速区域 + 回音剑气
+                    if (game.shadowZones) {
+                        for (let i = game.shadowZones.length - 1; i >= 0; i--) {
+                            const sz = game.shadowZones[i];
+                            sz.remaining -= cappedDt;
+                            if (sz.remaining <= 0) { game.shadowZones.splice(i, 1); continue; }
+                            // 回音剑气：0.3s 后朝玩家发射一次扇形三连（30%伤害），只发射一次
+                            if (!sz.echoFired) {
+                                sz.echoTimer -= cappedDt;
+                                if (sz.echoTimer <= 0) {
+                                    sz.echoFired = true;
+                                    const base = Math.atan2(player.y - sz.y, player.x - sz.x);
+                                    const spread = 0.25;
+                                    for (let k = -1; k <= 1; k++) {
+                                        const a = base + spread * k;
+                                        const pj = new Projectile(sz.x, sz.y, Math.cos(a) * sz.echoSpeed, Math.sin(a) * sz.echoSpeed, sz.echoDamage, 0, 0, '#b06aff', 12, true);
+                                        pj.ignoreIFrame = true;
+                                        game.projectiles.push(pj);
+                                    }
+                                }
+                            }
+                            // 减速区域：玩家进入减速 30%
+                            if (Math.hypot(player.x - sz.x, player.y - sz.y) < 90 + player.size) {
+                                player.slowTimer = 0.15;
+                                player.slowAmount = 0.3;
+                            }
+                        }
+                    }
+                    // 更新暗影刺客瞬移拖影
+                    if (game.shadowTrails) {
+                        for (let i = game.shadowTrails.length - 1; i >= 0; i--) {
+                            const tr = game.shadowTrails[i];
+                            tr.life -= cappedDt;
+                            if (tr.life <= 0) game.shadowTrails.splice(i, 1);
+                        }
+                    }
+                    // ===== 死神之指 状态机 =====
+                    if (game.deathMark.enabled) {
+                        updateDeathMark(cappedDt);
+                    }
+                    // 更新陨石下落动画
+                    if (game.meteorVisuals) {
+                        for (let i = game.meteorVisuals.length - 1; i >= 0; i--) {
+                            const m = game.meteorVisuals[i];
+                            if (!m.landed) {
+                                m.y += m.fallSpeed * cappedDt;
+                                if (m.y >= m.targetY) {
+                                    m.y = m.targetY;
+                                    m.landed = true;
+                                    m.landedLife = 0.4;
+                                    sound.play('meteor');
+                                    for (const e of game.enemies) {
+                                        if (!e.alive) continue;
+                                        if (Math.hypot(e.x - m.x, e.y - m.y) < m.radius) {
+                                            e.takeDamage(m.damage, 'meteor');
+                                        }
+                                    }
+                                    spawnParticles(m.x, m.y, 20, '#ff6600', 80, 0.6, 5);
+                                    triggerShake(4, 0.2);
+                                    if (m.leaveBurning) {
+                                        game.burningZones.push({ 
+                                            x: m.x, y: m.y, radius: m.radius * 0.6, 
+                                            damage: m.damage * m.burningDamagePercent, 
+                                            remaining: m.burningDuration,
+                                            tickRate: m.burningTickRate,
+                                            tickTimer: 0
+                                        });
+                                    }
+                                }
+                            } else {
+                                m.landedLife -= cappedDt;
+                                if (m.landedLife <= 0) game.meteorVisuals.splice(i, 1);
+                            }
+                        }
+                    }
+                    // 更新闪电链视觉效果
+                    if (game.chainLightningVisuals) {
+                        for (let i = game.chainLightningVisuals.length - 1; i >= 0; i--) {
+                            game.chainLightningVisuals[i].life -= cappedDt;
+                            if (game.chainLightningVisuals[i].life <= 0) game.chainLightningVisuals.splice(i, 1);
+                        }
+                    }
+                    for (const proj of game.projectiles) {
+                        proj.update(cappedDt);
+                        // 酸弹落地：生成毒池
+                        if (!proj.alive && proj.acid && !proj.acidPooled) {
+                            proj.acidPooled = true;
+                            spawnParticles(proj.x, proj.y, 8, '#66ff44', 60, 0.4, 3);
+                            if (game.fireZones.length >= 40) game.fireZones.shift();
+                            game.fireZones.push({ x: proj.x, y: proj.y, radius: proj.poolRadius || 75, damage: proj.poolDamage || 10, remaining: 4, tickRate: 0.4, tickTimer: 0, rgb: '120,255,80' });
+                        }
+                        if (!proj.alive) continue;
+                        if (proj.isEnemy) {
+                            if (dist(proj, player) < proj.size + player.size) {
+                                player.takeDamage(proj.damage, 'default', proj.ignoreIFrame === true);
+                                proj.alive = false;
+                                spawnParticles(proj.x, proj.y, 4, '#ff0000', 40, 0.2, 3);
+                            }
+                        } else {
+                            for (const enemy of game.enemies) {
+                                if (!enemy.alive) continue;
+                                if (dist(proj, enemy) < proj.size + enemy.size) {
+                                    enemy.takeDamage(proj.damage, 'projectile');
+                                    sound.play('hit');
+                                    if (proj.knockback) {
+                                        const kd = Math.hypot(enemy.x - proj.x, enemy.y - proj.y) || 1;
+                                        enemy.x = clamp(enemy.x + (enemy.x - proj.x) / kd * proj.knockback, enemy.size, W - enemy.size);
+                                        enemy.y = clamp(enemy.y + (enemy.y - proj.y) / kd * proj.knockback, enemy.size, H - enemy.size);
+                                    }
+                                    if (proj.shadowSlow && proj.slowChance > 0 && Math.random() < proj.slowChance) {
+                                        enemy.applySlow(proj.slowAmount, proj.slowDuration);
+                                    }
+                                    if (proj.splashRadius > 0) {
+                                        const splashDmg = proj.damage * proj.splashDamagePercent;
+                                        for (const other of game.enemies) {
+                                            if (!other.alive || other === enemy) continue;
+                                            if (dist(proj, other) < proj.splashRadius) other.takeDamage(splashDmg, 'projectile');
+                                        }
+                                    }
+                                    proj.alive = false;
+                                    spawnParticles(proj.x, proj.y, 4, proj.color, 50, 0.2, 2.5);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    game.projectiles = game.projectiles.filter(p => p.alive);
+                    for (const enemy of game.enemies) if (enemy.alive) enemy.update(cappedDt, player);
+                    game.enemies = game.enemies.filter(e => e.alive);
+                    // 贪婪之石：经验球自动飞向玩家（全图吸引）
+                    const pickupR = player.relicGreed ? Math.max(W, H) * 2 : player.getEffectivePickupRange();
+                    for (const orb of game.experienceOrbs) {
+                        if (dist(player, orb) < pickupR) {
+                            const angle = Math.atan2(player.y - orb.y, player.x - orb.x);
+                            orb.x += Math.cos(angle) * 400 * cappedDt;
+                            orb.y += Math.sin(angle) * 400 * cappedDt;
+                        }
+                        if (dist(player, orb) < player.size + 6) { orb.collected = true; player.addXp(Math.floor(orb.value * (player.expMultiplier || 1))); spawnParticles(orb.x, orb.y, 3, '#ffd700', 30, 0.25, 2); }
+                    }
+                    game.experienceOrbs = game.experienceOrbs.filter(o => !o.collected && o.life > 0);
+                    for (const orb of game.experienceOrbs) orb.life -= cappedDt;
+                    game.spawnTimer -= cappedDt;
+                    // ===== 精英波次驱动 =====
+                    if (game.waveState === 'idle') {
+                        game.waveTimer -= cappedDt;
+                        if (game.waveTimer <= 0) startEliteWave();
+                    } else if (game.waveState === 'warning') {
+                        game.waveTimer -= cappedDt;
+                        game.waveNoticeTimer -= cappedDt;
+                        if (game.waveTimer <= 0) {
+                            spawnWaveElites();
+                        }
+                    } else if (game.waveState === 'active') {
+                        // 精英全部清除后空投宝箱
+                        const eliteLeft = game.enemies.filter(e => e.alive && e.isElite).length;
+                        if (eliteLeft <= 0) {
+                            spawnChest();
+                        }
+                    } else if (game.waveState === 'reward') {
+                        // 宝箱被拾取或超时后回到下一轮
+                        if (game.chests.length === 0) {
+                            game.waveState = 'idle';
+                            game.waveTimer = WAVE_INTERVAL;
+                        }
+                    }
+                    // 普通刷怪：仅 warning 预警期间暂停，其余状态（idle/active/reward）照常刷
+                    if (game.waveState !== 'warning') {
+                        if (!dbg.pauseSpawn) {
+                            if (game.spawnTimer <= 0) { game.spawnTimer = game.spawnInterval; spawnEnemy(); }
+                        }
+                    } else {
+                        game.spawnTimer = game.spawnInterval;
+                    }
+                    // 宝箱更新：倒计时 + 拾取
+                    for (let i = game.chests.length - 1; i >= 0; i--) {
+                        const ch = game.chests[i];
+                        ch.life -= cappedDt;
+                        if (ch.life <= 0) { game.chests.splice(i, 1); continue; }
+                        if (Math.hypot(player.x - ch.x, player.y - ch.y) < 40 + player.size) {
+                            openChest(ch);
+                            game.chests.splice(i, 1);
+                        }
+                    }
+                    // 定时炸弹：每 10 秒在玩家位置爆炸（伤害随等级提升）
+                    if (player.relicBomb) {
+                        game.bombTimer -= cappedDt;
+                        if (game.bombTimer <= 0) {
+                            game.bombTimer = 10;
+                            const bombDmg = 20 + game.player.level * 4;
+                            const radius = 110;
+                            sound.play('explosion');
+                            triggerShake(4, 0.2);
+                            spawnParticles(player.x, player.y, 30, '#ff8833', 180, 0.5, 5);
+                            spawnParticles(player.x, player.y, 12, '#ffcc44', 140, 0.4, 4);
+                            for (const e of game.enemies) {
+                                if (!e.alive) continue;
+                                if (Math.hypot(e.x - player.x, e.y - player.y) < radius + e.size) {
+                                    e.takeDamage(bombDmg, 'explosion');
+                                }
+                            }
+                        }
+                    }
+                    // 祭坛/传送门：45 秒刷新一次，触碰触发
+                    game.altarTimer -= cappedDt;
+                    if (game.altarTimer <= 0 && game.altars.length === 0) {
+                        game.altarTimer = 45;
+                        spawnAltar();
+                    }
+                    for (let i = game.altars.length - 1; i >= 0; i--) {
+                        const a = game.altars[i];
+                        a.life -= cappedDt;
+                        if (a.life <= 0) { game.altars.splice(i, 1); continue; }
+                        if (Math.hypot(player.x - a.x, player.y - a.y) < 34 + player.size) {
+                            activateAltar(a);
+                            game.altars.splice(i, 1);
+                        }
+                    }
+                    // 成就检查（每 0.5 秒）
+                    game.achCheckTimer = (game.achCheckTimer || 0) - cappedDt;
+                    if (game.achCheckTimer <= 0) {
+                        game.achCheckTimer = 0.5;
+                        checkAchievements();
+                    }
+                    if (!game.bossOnField && !dbg.pauseSpawn) {
+                        // 超级Boss：击杀 3 个 Boss 或存活 10 分钟后召唤
+                        if (!game.superBossSpawned && (game.bossKilledCount >= 3 || game.time >= 600)) {
+                            spawnSuperBoss();
+                        } else {
+                            game.bossTimer -= cappedDt;
+                            if (game.bossTimer <= 0) { spawnBoss(); game.bossTimer = (DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal).bossRespawn; }
+                        }
+                    }
+                    if (game.warningTimer > 0) game.warningTimer -= cappedDt;
+                    const newDiff = Math.floor(game.time / 25) + 1;
+                    if (newDiff > game.difficultyLevel) {
+                        game.difficultyLevel = newDiff;
+                        // 出怪频率：按难度预设的初始间隔 / 每级降低量 / 下限收紧
+                        const diffNow = DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal;
+                        game.spawnInterval = Math.max(diffNow.spawnMin, diffNow.spawnInterval - (newDiff - diffNow.diffStart) * diffNow.spawnStep);
+                    }
+                    for (const p of particles) p.update(cappedDt); particles = particles.filter(p => p.alive);
+                    for (const dn of damageNumbers) dn.update(cappedDt); damageNumbers = damageNumbers.filter(dn => dn.alive);
+                    for (const dt2 of deathTexts) dt2.update(cappedDt); deathTexts = deathTexts.filter(dt2 => dt2.alive);
+                    if (screenShake.elapsed < screenShake.duration) screenShake.elapsed += cappedDt;
+                    game.time += cappedDt;
+                } else if (game.state === 'levelup' || game.state === 'bossdrop') {
+                    for (const p of particles) p.update(cappedDt); particles = particles.filter(p => p.alive);
+                    for (const dn of damageNumbers) dn.update(cappedDt); damageNumbers = damageNumbers.filter(dn => dn.alive);
+                    for (const dt2 of deathTexts) dt2.update(cappedDt); deathTexts = deathTexts.filter(dt2 => dt2.alive);
+                    if (screenShake.elapsed < screenShake.duration) screenShake.elapsed += cappedDt;
+                }
+            }
+
+            function draw(ctx) {
+                ctx.clearRect(0, 0, W, H);
+                const shake = getShakeOffset();
+                ctx.save(); ctx.translate(shake.x, shake.y);
+                ctx.fillStyle = '#2b160c'; ctx.fillRect(-10, -10, W + 20, H + 20);
+                // 精英波次提示
+                if (game.state === 'playing' && game.waveState !== 'idle') {
+                    let txt = '';
+                    if (game.waveState === 'warning') txt = '精英波次来袭！' + Math.ceil(Math.max(0, game.waveTimer)) + ' 秒后降临';
+                    else if (game.waveState === 'active') txt = '精英波次！清除所有精英';
+                    else if (game.waveState === 'reward') txt = '宝箱已空投！';
+                    ctx.save();
+                    ctx.font = 'bold 22px "Impact","Arial Black","PingFang SC",sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.shadowColor = '#ff6600'; ctx.shadowBlur = 12;
+                    ctx.fillStyle = '#ffcc66';
+                    ctx.fillText(txt, W / 2, 70);
+                    ctx.shadowBlur = 0;
+                    ctx.restore();
+                }
+                ctx.strokeStyle = 'rgba(255,180,120,0.05)'; ctx.lineWidth = 1;
+                for (let gx = 40; gx < W; gx += 40) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
+                for (let gy = 40; gy < H; gy += 40) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
+                for (const orb of game.experienceOrbs) {
+                    const floatY = Math.sin(game.time * 3 + orb.floatOffset) * 3;
+                    const alpha = orb.life < 3 ? orb.life / 3 : 1;
+                    ctx.fillStyle = `rgba(255,215,0,${alpha})`; ctx.beginPath(); ctx.arc(orb.x, orb.y + floatY, 5, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = `rgba(255,255,200,${alpha*0.8})`; ctx.beginPath(); ctx.arc(orb.x, orb.y + floatY, 2.5, 0, Math.PI * 2); ctx.fill();
+                }
+                // 宝箱绘制：金色宝箱 + 发光 + 脉动
+                for (const ch of game.chests) {
+                    const by = ch.y + Math.sin(game.time * 3 + ch.bob) * 3;
+                    const pulse = 0.6 + Math.sin(game.time * 6) * 0.2;
+                    const glow = ctx.createRadialGradient(ch.x, by, 0, ch.x, by, 34);
+                    glow.addColorStop(0, `rgba(255,215,0,${0.35 * pulse})`);
+                    glow.addColorStop(1, 'rgba(255,215,0,0)');
+                    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(ch.x, by, 34, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#ffd700'; ctx.strokeStyle = '#b8860b'; ctx.lineWidth = 2.5;
+                    ctx.beginPath(); ctx.arc(ch.x, by, 14, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                    ctx.fillStyle = '#8a5a00';
+                    ctx.fillRect(ch.x - 7, by - 4, 14, 5);
+                    ctx.fillStyle = '#fff3b0';
+                    ctx.fillRect(ch.x - 1.5, by - 7, 3, 10);
+                }
+                // 祭坛/传送门绘制
+                for (const a of game.altars) {
+                    const ay = a.y + Math.sin(game.time * 2 + a.pulse) * 3;
+                    const colors = { heal: '#55ff88', risk: '#ff4444', portal: '#88aaff' };
+                    const col = colors[a.type] || '#ffffff';
+                    const pulse = 0.6 + Math.sin(game.time * 5 + a.pulse) * 0.3;
+                    const glow = ctx.createRadialGradient(a.x, ay, 0, a.x, ay, 40);
+                    glow.addColorStop(0, col.replace(')', `,${0.35 * pulse})`).replace('rgb', 'rgba'));
+                    glow.addColorStop(1, 'rgba(255,255,255,0)');
+                    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(a.x, ay, 40, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = col; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.arc(a.x, ay, 13, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                    // 图标区分
+                    ctx.fillStyle = '#fff';
+                    if (a.type === 'heal') { ctx.fillStyle = '#155a2a'; ctx.fillRect(a.x - 7, ay - 2, 14, 4); ctx.fillRect(a.x - 2, ay - 7, 4, 14); }
+                    else if (a.type === 'risk') { ctx.fillStyle = '#5a1010'; ctx.beginPath(); ctx.moveTo(a.x, ay - 8); ctx.lineTo(a.x + 8, ay + 5); ctx.lineTo(a.x - 8, ay + 5); ctx.closePath(); ctx.fill(); }
+                    else { ctx.fillStyle = '#10305a'; ctx.beginPath(); ctx.arc(a.x, ay, 5, 0, Math.PI * 2); ctx.fill(); }
+                }
+                for (const proj of game.projectiles) proj.draw(ctx);
+                for (const enemy of game.enemies) enemy.draw(ctx);
+                if (game.deathMark.enabled) {
+                    for (const enemy of game.enemies) {
+                        if (enemy.deathMarked) drawDeathMark(ctx, enemy);
+                    }
+                }
+                if (game.player) game.player.draw(ctx);
+                if (game.player) drawWeaponsVisuals(game.player, ctx);
+                for (const p of particles) p.draw(ctx);
+                for (const dn of damageNumbers) dn.draw(ctx);
+                for (const dt2 of deathTexts) dt2.draw(ctx);
+                ctx.restore();
+                if (game.state === 'levelup' || game.bossDropChoices) {
+                    ctx.fillStyle = 'rgba(43,26,18,0.4)'; ctx.fillRect(0, 0, W, H);
+                }
+                updateHud();
+            }
+
+            function updateHud() {
+                const inGame = game.state !== 'menu';
+                hudTop.style.display = inGame ? 'flex' : 'none';
+                hudWeps.style.display = inGame ? 'flex' : 'none';
+                hudWarning.style.display = 'none';
+                hudHint.style.display = 'none';
+                pauseOverlay.style.display = 'none';
+                btnPause.style.display = inGame ? '' : 'none';
+                if (!inGame) return;
+                const player = game.player;
+                if (player) {
+                    const hpRatio = clamp(player.hp / player.maxHp, 0, 1);
+                    hudHpFill.style.width = (hpRatio * 100) + '%';
+                    hudHpText.textContent = `${Math.ceil(player.hp)} / ${player.maxHp}`;
+                    const xpRatio = clamp(player.xp / player.xpToNext, 0, 1);
+                    hudXpFill.style.width = (xpRatio * 100) + '%';
+                    hudXpText.textContent = `Lv.${player.level}`;
+                    let weps = '';
+                    for (const w of player.weapons) {
+                        if (w.type === 'magic_missile') weps += '<span class="chip">' + ICONS.flame + '火球</span>';
+                        else if (w.type === 'orbit_blade') weps += '<span class="chip">' + ICONS.swords + '飞刃×' + w.bladeCount + '</span>';
+                        else if (w.type === 'frost_nova') weps += '<span class="chip">' + ICONS.snowflake + '冰霜</span>';
+                        else if (w.type === 'lightning_chain') weps += '<span class="chip">' + ICONS.zap + '闪电</span>';
+                        else if (w.type === 'meteor') weps += '<span class="chip">' + ICONS.orbit + '陨石</span>';
+                        else if (w.type === 'shadow_spirit') weps += '<span class="chip">' + ICONS.ghost + '精灵×' + w.spiritCount + '</span>';
+                    }
+                    hudWeps.innerHTML = weps ? '武器：' + weps : '';
+                }
+                hudTime.textContent = Math.floor(game.time) + 's';
+                hudKills.textContent = game.kills;
+                const boss = game.enemies.find(e => e.isBoss && e.alive);
+                if (boss) {
+                    hudBoss.style.display = 'flex';
+                    hudBossName.textContent = ENEMY_TYPES[boss.typeKey].name;
+                    hudBossFill.style.width = (clamp(boss.hp / boss.maxHp, 0, 1) * 100) + '%';
+                    if (boss.invincible && boss.shieldHp > 0) {
+                        hudShield.style.display = 'block';
+                        hudShield.style.width = (clamp(boss.shieldHp / boss.shieldMax, 0, 1) * 100) + '%';
+                    } else {
+                        hudShield.style.display = 'none';
+                    }
+                } else if (hudBoss.style.display !== 'none') {
+                    hudBoss.style.display = 'none';
+                }
+                if (game.warningTimer > 0) {
+                    hudWarning.textContent = game.warningText;
+                    hudWarning.style.opacity = (0.9 * Math.min(1, game.warningTimer)).toFixed(2);
+                    hudWarning.style.display = 'block';
+                } else if (hudWarning.style.display !== 'none') {
+                    hudWarning.style.display = 'none';
+                }
+                if (game.time < 4 && game.state === 'playing') {
+                    hudHint.textContent = useTouchControl ? '滑动屏幕移动角色' : 'WASD 移动 · 自动攻击 · 击杀升级';
+                    hudHint.style.display = 'block';
+                } else if (hudHint.style.display !== 'none') {
+                    hudHint.style.display = 'none';
+                }
+                pauseOverlay.style.display = (dbg.pauseGame && game.state === 'playing') ? 'flex' : 'none';
+            }
+
+            let lastTime = performance.now(), accumulator = 0;
+            const fixedDt = 1 / 60;
+            document.addEventListener('visibilitychange', () => { lastTime = performance.now(); accumulator = 0; });
+            function gameLoop(timestamp) {
+                let rawDt = (timestamp - lastTime) / 1000; lastTime = timestamp;
+                if (rawDt > 0.2) rawDt = 0.2;
+                dbg.fps = dbg.fps * 0.9 + (rawDt > 0 ? Math.min(60, 1 / rawDt) : 60) * 0.1;
+                const fpsEl = $inp('dbg-fps');
+                if (fpsEl) fpsEl.textContent = Math.round(dbg.fps);
+                if (!dbg.pauseGame) {
+                    accumulator += rawDt * dbg.timeScale;
+                    while (accumulator >= fixedDt) { update(fixedDt); accumulator -= fixedDt; }
+                }
+                resizeCanvas();
+                if (game.player) { game.player.x = clamp(game.player.x, game.player.size, W - game.player.size); game.player.y = clamp(game.player.y, game.player.size, H - game.player.size); }
+                draw(ctx);
+                requestAnimationFrame(gameLoop);
+            }
+
+            restartBtn.addEventListener('click', () => { initGame(); lastTime = performance.now(); accumulator = 0; });
+            gameoverOverlay.addEventListener('click', (e) => { if (e.target === gameoverOverlay) { initGame(); lastTime = performance.now(); accumulator = 0; } });
+
+            function renderMenu() {
+                menuDiffs.innerHTML = '';
+                for (const [key, d] of Object.entries(DIFFICULTIES)) {
+                    const b = document.createElement('button');
+                    b.textContent = d.name;
+                    b.classList.toggle('active', game.selectedDifficulty === key);
+                    b.addEventListener('click', () => { game.selectedDifficulty = key; renderMenu(); });
+                    menuDiffs.appendChild(b);
+                }
+                menuWeapons.innerHTML = '';
+                for (const [key, m] of Object.entries(START_WEAPON_META)) {
+                    const b = document.createElement('button');
+                    b.innerHTML = `<span class="w-ico">${ICONS[m.icon] || ''}</span>${m.name}`;
+                    b.classList.toggle('active', game.selectedWeapon === key);
+                    b.addEventListener('click', () => { game.selectedWeapon = key; renderMenu(); });
+                    menuWeapons.appendChild(b);
+                }
+                const bt = parseInt(localStorage.getItem('rogue_best_time') || '0', 10);
+                const bk = parseInt(localStorage.getItem('rogue_best_kills') || '0', 10);
+                menuBest.textContent = (bt > 0 || bk > 0) ? `最佳记录：存活 ${bt} 秒 · ${bk} 击杀` : '尚无最佳记录，开启你的第一局吧！';
+                menuShards.textContent = `灵魂碎片：${metaData.shards || 0}`;
+            }
+
+            // ===== 灵魂宝库面板 =====
+            function renderMetaPanel() {
+                metaShardsShow.textContent = `灵魂碎片：${metaData.shards || 0}`;
+                metaList.innerHTML = '';
+                // 永久升级树
+                for (const u of META_UPGRADES) {
+                    const lv = metaLevel(u.id);
+                    const cost = metaUpgradeCost(u.id);
+                    const item = document.createElement('div');
+                    item.className = 'meta-item';
+                    const info = document.createElement('div');
+                    info.className = 'mi-info';
+                    const name = document.createElement('div');
+                    name.className = 'mi-name';
+                    name.innerHTML = `${ICONS[u.icon] || ''} ${u.name}`;
+                    const desc = document.createElement('div');
+                    desc.className = 'mi-desc';
+                    desc.textContent = u.desc(lv);
+                    const lvEl = document.createElement('div');
+                    lvEl.className = 'mi-lv';
+                    lvEl.textContent = `等级 ${lv}/${u.maxLevel}`;
+                    info.appendChild(name); info.appendChild(desc); info.appendChild(lvEl);
+                    item.appendChild(info);
+                    const btn = document.createElement('button');
+                    if (cost < 0) {
+                        btn.textContent = '已满级';
+                        btn.disabled = true;
+                    } else {
+                        btn.textContent = `${cost} 碎片`;
+                        btn.disabled = (metaData.shards || 0) < cost;
+                        btn.addEventListener('click', () => {
+                            if (buyMetaUpgrade(u.id)) {
+                                renderMetaPanel();
+                                menuShards.textContent = `灵魂碎片：${metaData.shards || 0}`;
+                            }
+                        });
+                    }
+                    item.appendChild(btn);
+                    metaList.appendChild(item);
+                }
+                // 圣物商店分隔
+                const sep = document.createElement('div');
+                sep.style.cssText = 'font-weight:bold;color:var(--orange-deep);font-size:14px;margin:8px 0 2px;letter-spacing:0.05em;';
+                sep.textContent = '—— 圣物商店 ——';
+                metaList.appendChild(sep);
+                // 圣物（永久生效）
+                for (const r of META_RELICS) {
+                    const owned = hasRelic(r.id);
+                    const item = document.createElement('div');
+                    item.className = 'meta-item';
+                    const info = document.createElement('div');
+                    info.className = 'mi-info';
+                    const name = document.createElement('div');
+                    name.className = 'mi-name';
+                    name.innerHTML = `${ICONS[r.icon] || ''} ${r.name}`;
+                    const desc = document.createElement('div');
+                    desc.className = 'mi-desc';
+                    desc.textContent = r.desc;
+                    info.appendChild(name); info.appendChild(desc);
+                    item.appendChild(info);
+                    const btn = document.createElement('button');
+                    if (owned) {
+                        btn.textContent = '已拥有';
+                        btn.disabled = true;
+                    } else {
+                        btn.textContent = `${r.cost} 碎片`;
+                        btn.disabled = (metaData.shards || 0) < r.cost;
+                        btn.addEventListener('click', () => {
+                            if (buyRelic(r.id)) {
+                                renderMetaPanel();
+                                menuShards.textContent = `灵魂碎片：${metaData.shards || 0}`;
+                            }
+                        });
+                    }
+                    item.appendChild(btn);
+                    metaList.appendChild(item);
+                }
+            }
+            btnOpenMeta.addEventListener('click', () => { renderMetaPanel(); menuOverlay.style.display = 'none'; metaPanel.style.display = 'flex'; });
+            metaClose.addEventListener('click', () => { metaPanel.style.display = 'none'; menuOverlay.style.display = 'flex'; renderMenu(); });
+            // 清空存档：清除灵魂碎片/永久升级/圣物/成就/最佳记录
+            metaReset.addEventListener('click', () => {
+                if (!confirm('确定清空所有存档？灵魂碎片、永久升级、圣物、成就与最佳记录都将清除！')) return;
+                try {
+                    localStorage.removeItem('rogue_meta');
+                    localStorage.removeItem('rogue_ach');
+                    localStorage.removeItem('rogue_best_time');
+                    localStorage.removeItem('rogue_best_kills');
+                } catch(e) {}
+                metaData = loadMeta();
+                achievementsDone = loadAchievements();
+                renderMetaPanel();
+                renderMenu();
+            });
+            function showMenu() {
+                renderMenu();
+                dbg.pauseGame = false;
+                menuOverlay.style.display = 'flex';
+                game.state = 'menu';
+            }
+            menuStart.addEventListener('click', () => {
+                metaPanel.style.display = 'none';
+                menuOverlay.style.display = 'none';
+                initGame();
+                lastTime = performance.now(); accumulator = 0;
+            });
+            menuBtn.addEventListener('click', () => {
+                gameoverOverlay.style.display = 'none';
+                metaPanel.style.display = 'none';
+                showMenu();
+            });
+
+            initIcons();
+            lastTime = performance.now(); requestAnimationFrame(gameLoop);
+            showMenu();
+            if (typeof dbgInit === 'function') dbgInit();
+            console.log('魔法幸存者 已启动');
+
+            // ==================== 顶部按钮与快捷键（两版本共用） ====================
+            btnPause.addEventListener('click', () => {
+                if (game.state !== 'playing') return;
+                dbg.pauseGame = !dbg.pauseGame;
+                btnPause.innerHTML = dbg.pauseGame ? ICONS.play : ICONS.pause;
+                const dbgPauseEl = $inp('dbg-pause'); if (dbgPauseEl) dbgPauseEl.checked = dbg.pauseGame;
+            });
+            btnMute.addEventListener('click', () => { btnMute.innerHTML = sound.toggleMute() ? ICONS['volume-x'] : ICONS['volume-2']; });
+            // ===== 死神之指按钮：点击切换模式（无升级机制，初始即满级） =====
+            btnDeathMark.addEventListener('click', (e) => {
+                if (!game.deathMark.enabled) return;
+                game.deathMark.mode = game.deathMark.mode === 'auto' ? 'manual' : 'auto';
+                btnDeathMark.classList.toggle('death-auto', game.deathMark.mode === 'auto');
+                game.warningText = '死神之指：' + (game.deathMark.mode === 'auto' ? '自动' : '手动') + '模式';
+                game.warningTimer = 1.0;
+            });
+            window.addEventListener('keydown', (e) => {
+                if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')) return;
+                if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+                    if (game.state !== 'playing') return;
+                    dbg.pauseGame = !dbg.pauseGame;
+                    btnPause.innerHTML = dbg.pauseGame ? ICONS.play : ICONS.pause;
+                }
+                else if (e.key === 'm' || e.key === 'M') { btnMute.innerHTML = sound.toggleMute() ? ICONS['volume-x'] : ICONS['volume-2']; }
+            });
+            // ===== 主菜单：死神之指开关（开启后本局无法获得碎片/成就） =====
+            const menuDeathmark = document.getElementById('menu-deathmark');
+            if (menuDeathmark) {
+                menuDeathmark.addEventListener('change', (e) => {
+                    const on = e.target.checked;
+                    game.deathMark.enabled = on;
+                    btnDeathMark.style.display = on ? '' : 'none';
+                    if (!on) {
+                        for (const t of game.deathMark.targets) t.deathMarked = false;
+                        game.deathMark.targets = [];
+                    } else {
+                        game.deathMark.mode = 'auto';
+                        btnDeathMark.classList.add('death-auto');
+                    }
+                    if (game.player) {
+                        game.warningText = on ? '死神之指已开启（本局无法获得碎片/成就）' : '死神之指已关闭';
+                        game.warningTimer = 1.2;
+                    }
+                });
+            }
