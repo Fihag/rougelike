@@ -1,7 +1,7 @@
             // ==================== 灵魂碎片结算（死亡或返回主菜单时调用） ====================
             function settleShards() {
                 let shardMult = (DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal).shardMult || 1;
-                game.soulShards = Math.floor(Math.max(0, Math.floor(game.kills / 2 / 2) * shardMult));
+                game.soulShards = Math.floor(Math.max(0, Math.floor(game.kills / 3) * shardMult));
                 if (game.soulShards > 0) { metaData.shards = (metaData.shards || 0) + game.soulShards; saveMeta(); }
                 return game.soulShards;
             }
@@ -149,7 +149,7 @@
                             console.warn('Levelup error:', e);
                             game.state = 'playing';
                         }
-                        this.hp = Math.min(this.maxHp, this.hp + 15);
+                        this.hp = Math.min(this.maxHp, this.hp + Math.floor(this.maxHp * 0.1));
                     }
                 }
 

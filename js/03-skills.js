@@ -9,10 +9,10 @@
             const START_WEAPON_DEFS = {
                 magic_missile:   () => ({ type: 'magic_missile', level: 1, cooldown: 0, cooldownTime: 0.85, cooldownMultiplier: 1, damage: 21, damageMultiplier: 1, projectileSpeed: 350, extraProjectiles: 0, splashRadius: 28, splashDamagePercent: 0.35 }),
                 orbit_blade:     () => ({ type: 'orbit_blade', level: 1, bladeCount: 3, radius: 60, rotationSpeed: 3.0, damage: 26, damageMultiplier: 1, angle: 0, hitCooldowns: new Map(), hitCdTime: 0.28 }),
-                frost_nova:      () => ({ type: 'frost_nova', level: 1, cooldown: 0, cooldownTime: 2.2, radius: 130, damage: 26, damageMultiplier: 1, slowAmount: 0.50, slowDuration: 2.2 }),
+                frost_nova:      () => ({ type: 'frost_nova', level: 1, cooldown: 0, cooldownTime: 2.2, radius: 130, damage: 32, damageMultiplier: 1, slowAmount: 0.50, slowDuration: 2.2 }),
                 lightning_chain: () => ({ type: 'lightning_chain', level: 1, cooldown: 0, cooldownTime: 1.0, damage: 20, damageMultiplier: 1, bounceCount: 1, bounceRange: 120, damageFalloff: 0.3, hitCooldowns: new Map(), hitCdTime: 0.3 }),
-                meteor:          () => ({ type: 'meteor', level: 1, cooldown: 0, cooldownTime: 5.5, damage: 100, damageMultiplier: 1, radius: 100, doubleChance: 0 }),
-                shadow_spirit:   () => ({ type: 'shadow_spirit', level: 1, spiritCount: 2, damage: 15, damageMultiplier: 1, attackSpeed: 1.25, attackSpeedMultiplier: 1, slowChance: 0, slowAmount: 0.3, slowDuration: 1.5, attackTimer: 0, lockReduction: 0 })
+                meteor:          () => ({ type: 'meteor', level: 1, cooldown: 0, cooldownTime: 5.0, damage: 110, damageMultiplier: 1, radius: 100, doubleChance: 0 }),
+                shadow_spirit:   () => ({ type: 'shadow_spirit', level: 1, spiritCount: 2, damage: 13, damageMultiplier: 1, attackSpeed: 1.3125, attackSpeedMultiplier: 1, slowChance: 0, slowAmount: 0.3, slowDuration: 1.5, attackTimer: 0, lockReduction: 0 })
             };
             const START_WEAPON_META = {
                 magic_missile:   { name: '魔法弹', icon: 'flame' },
@@ -80,7 +80,7 @@
                     apply: (p) => {
                         p.weapons.push({
                             type: 'frost_nova', level: 1, cooldown: 0, cooldownTime: 2.2, radius: 130,
-                            damage: 26, damageMultiplier: 1, slowAmount: 0.50, slowDuration: 2.2
+                            damage: 32, damageMultiplier: 1, slowAmount: 0.50, slowDuration: 2.2
                         });
                     }
                 },
@@ -100,9 +100,9 @@
                     apply: (p) => { p.globalDamageMultiplier = (p.globalDamageMultiplier || 1) + 0.15; }
                 },
                 {
-                    id: 'max_hp', name: '生命强化', icon: 'heart', desc: '最大生命 +60', maxLevel: 3, color: '#ff6677',
+                    id: 'max_hp', name: '生命强化', icon: 'heart', desc: '最大生命 +45', maxLevel: 3, color: '#ff6677',
                     applies: () => true,
-                    apply: (p) => { p.maxHp += 60; p.hp = Math.min(p.hp + 60, p.maxHp); }
+                    apply: (p) => { p.maxHp += 45; p.hp = Math.min(p.hp + 45, p.maxHp); }
                 },
                 {
                     id: 'move_speed', name: '迅捷步伐', icon: 'footprints', desc: '移动速度 +16%', maxLevel: 3, color: '#77dd77',
@@ -162,8 +162,8 @@
                     applies: (p) => !p.weapons.some(w => w.type === 'meteor'),
                     apply: (p) => {
                         p.weapons.push({
-                            type: 'meteor', level: 1, cooldown: 0, cooldownTime: 5.5,
-                            damage: 100, damageMultiplier: 1, radius: 100, doubleChance: 0
+                            type: 'meteor', level: 1, cooldown: 0, cooldownTime: 5.0,
+                            damage: 110, damageMultiplier: 1, radius: 100, doubleChance: 0
                         });
                     }
                 },
@@ -193,8 +193,8 @@
                     applies: (p) => !p.weapons.some(w => w.type === 'shadow_spirit'),
                     apply: (p) => {
                         p.weapons.push({
-                            type: 'shadow_spirit', level: 1, spiritCount: 2, damage: 15, damageMultiplier: 1,
-                            attackSpeed: 1.25, attackSpeedMultiplier: 1,
+                            type: 'shadow_spirit', level: 1, spiritCount: 2, damage: 13, damageMultiplier: 1,
+                            attackSpeed: 1.3125, attackSpeedMultiplier: 1,
                             slowChance: 0, slowAmount: 0.3, slowDuration: 1.5,
                             attackTimer: 0, lockReduction: 0
                         });
