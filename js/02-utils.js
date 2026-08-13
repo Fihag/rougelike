@@ -98,21 +98,61 @@
 
             // ==================== 粒子系统 ====================
             class Particle {
-                constructor(x, y, vx, vy, life, color, size = 3) {
+                constructor(x, y, vx, vy, life, color, size = 3, opts = {}) {
                     this.x = x; this.y = y; this.vx = vx; this.vy = vy;
                     this.life = life; this.maxLife = life; this.color = color; this.size = size;
                     this.alive = true;
+                    this.shape = opts.shape || 'circle';
+                    this.glow = opts.glow || false;
+                    this.gravity = opts.gravity || 0;
+                    this.drag = opts.drag || 0;
+                    this.rot = opts.rot !== undefined ? opts.rot : rand(0, Math.PI * 2);
+                    this.rotSpeed = opts.rotSpeed || 0;
                 }
                 update(dt) {
+                    this.vy += (this.gravity || 0) * dt;
+                    if (this.drag > 0) {
+                        const d = Math.max(0, 1 - this.drag * dt);
+                        this.vx *= d; this.vy *= d;
+                    }
                     this.x += this.vx * dt; this.y += this.vy * dt;
+                    this.rot += this.rotSpeed * dt;
                     this.life -= dt;
                     if (this.life <= 0) this.alive = false;
                 }
                 draw(ctx) {
-                    const alpha = this.life / this.maxLife;
+                    const alpha = clamp(this.life / this.maxLife, 0, 1);
+                    const s = this.size * (0.4 + 0.6 * alpha);
+                    if (this.glow) ctx.globalCompositeOperation = 'lighter';
                     ctx.globalAlpha = alpha;
                     ctx.fillStyle = this.color;
-                    ctx.beginPath(); ctx.arc(this.x, this.y, this.size * alpha, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath();
+                    if (this.shape === 'star') {
+                        const r = s * 1.7;
+                        ctx.moveTo(this.x, this.y - r);
+                        ctx.lineTo(this.x + r * 0.28, this.y - r * 0.28);
+                        ctx.lineTo(this.x + r, this.y);
+                        ctx.lineTo(this.x + r * 0.28, this.y + r * 0.28);
+                        ctx.lineTo(this.x, this.y + r);
+                        ctx.lineTo(this.x - r * 0.28, this.y + r * 0.28);
+                        ctx.lineTo(this.x - r, this.y);
+                        ctx.lineTo(this.x - r * 0.28, this.y - r * 0.28);
+                        ctx.closePath();
+                        ctx.fill();
+                    } else if (this.shape === 'square') {
+                        ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rot);
+                        ctx.fillRect(-s * 0.7, -s * 0.7, s * 1.4, s * 1.4);
+                        ctx.restore();
+                    } else if (this.shape === 'cross') {
+                        ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rot);
+                        ctx.fillRect(-s * 0.25, -s * 1.3, s * 0.5, s * 2.6);
+                        ctx.fillRect(-s * 1.3, -s * 0.25, s * 2.6, s * 0.5);
+                        ctx.restore();
+                    } else {
+                        ctx.arc(this.x, this.y, s, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    if (this.glow) ctx.globalCompositeOperation = 'source-over';
                     ctx.globalAlpha = 1;
                 }
             }
@@ -127,6 +167,40 @@
                     particles.push(new Particle(x, y, Math.cos(angle) * spd, Math.sin(angle) * spd, rand(life * 0.6, life), color, rand(size * 0.5, size)));
                 }
                 if (particles.length > MAX_PARTICLES) particles = particles.slice(particles.length - MAX_PARTICLES);
+            }
+
+            // 高级特效粒子：发光/形状/重力/阻尼/旋转
+            function spawnFx(x, y, count, color, opts = {}) {
+                const speed = opts.speed || 80;
+                const life = opts.life || 0.4;
+                const size = opts.size || 3;
+                for (let i = 0; i < count; i++) {
+                    let angle;
+                    if (opts.angle !== undefined) {
+                        angle = opts.angle + rand(-(opts.spread || Math.PI), opts.spread || Math.PI);
+                    } else {
+                        angle = rand(0, Math.PI * 2);
+                    }
+                    const spd = rand(speed * 0.4, speed);
+                    particles.push(new Particle(x, y, Math.cos(angle) * spd, Math.sin(angle) * spd, rand(life * 0.6, life), color, rand(size * 0.5, size), {
+                        shape: opts.shape || 'circle', glow: opts.glow, gravity: opts.gravity || 0,
+                        drag: opts.drag || 0, rotSpeed: opts.rotSpeed || 0
+                    }));
+                }
+                if (particles.length > MAX_PARTICLES) particles = particles.slice(particles.length - MAX_PARTICLES);
+            }
+
+            // ==================== 背景漂浮尘埃 ====================
+            let dustParticles = [];
+            for (let i = 0; i < 26; i++) {
+                dustParticles.push({ x: rand(0, W), y: rand(0, H), vx: rand(-12, 12), vy: rand(-8, 8), size: rand(1, 2.4), phase: rand(0, Math.PI * 2) });
+            }
+            function updateDust(dt) {
+                for (const d of dustParticles) {
+                    d.x += d.vx * dt; d.y += d.vy * dt;
+                    if (d.x < -10) d.x = W + 10; else if (d.x > W + 10) d.x = -10;
+                    if (d.y < -10) d.y = H + 10; else if (d.y > H + 10) d.y = -10;
+                }
             }
 
             // ==================== 伤害数字 ====================

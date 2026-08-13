@@ -109,6 +109,10 @@
                                         }
                                     }
                                     spawnParticles(m.x, m.y, 20, '#ff6600', 80, 0.6, 5);
+                                    spawnParticles(m.x, m.y, 14, '#ffcc44', 140, 0.5, 4);
+                                    spawnFx(m.x, m.y, 12, '#ff8c00', { shape: 'star', glow: true, speed: 130, life: 0.5, size: 5 });
+                                    spawnFx(m.x, m.y, 16, '#8a8a8a', { speed: 60, life: 0.8, size: 6, gravity: 160, drag: 1.5 });
+                                    game.rings.push({ x: m.x, y: m.y, r: 8, maxR: m.radius * 0.9, life: 0.4, maxLife: 0.4, color: '#ff8833', width: 5 });
                                     triggerShake(4, 0.2);
                                     if (m.leaveBurning) {
                                         game.burningZones.push({ 
@@ -172,6 +176,7 @@
                                     }
                                     proj.alive = false;
                                     spawnParticles(proj.x, proj.y, 4, proj.color, 50, 0.2, 2.5);
+                                    spawnFx(proj.x, proj.y, 5, '#ffffff', { shape: 'star', glow: true, speed: 80, life: 0.2, size: 4 });
                                     break;
                                 }
                             }
@@ -210,10 +215,10 @@
                             spawnChest();
                         }
                     } else if (game.waveState === 'reward') {
-                        // 宝箱被拾取或超时后回到下一轮
+                        // 宝箱被拾取或超时后回到下一轮（后续波次 50 秒一轮）
                         if (game.chests.length === 0) {
                             game.waveState = 'idle';
-                            game.waveTimer = WAVE_INTERVAL;
+                            game.waveTimer = WAVE_INTERVAL_AFTER;
                         }
                     }
                     // 普通刷怪：仅 warning 预警期间暂停，其余状态（idle/active/reward）照常刷
@@ -294,12 +299,37 @@
                     for (const p of particles) p.update(cappedDt); particles = particles.filter(p => p.alive);
                     for (const dn of damageNumbers) dn.update(cappedDt); damageNumbers = damageNumbers.filter(dn => dn.alive);
                     for (const dt2 of deathTexts) dt2.update(cappedDt); deathTexts = deathTexts.filter(dt2 => dt2.alive);
+                    // 特效环扩散
+                    if (game.rings) {
+                        for (let i = game.rings.length - 1; i >= 0; i--) {
+                            const rg = game.rings[i];
+                            rg.life -= cappedDt;
+                            if (rg.life <= 0) { game.rings.splice(i, 1); continue; }
+                            const t = 1 - rg.life / rg.maxLife;
+                            rg.r = rg.maxR * (1 - Math.pow(1 - t, 3));
+                        }
+                    }
+                    if (game.levelFlash > 0) game.levelFlash -= cappedDt;
+                    if (game.flashWhite > 0) game.flashWhite -= cappedDt;
+                    updateDust(cappedDt);
                     if (screenShake.elapsed < screenShake.duration) screenShake.elapsed += cappedDt;
                     game.time += cappedDt;
                 } else if (game.state === 'levelup' || game.state === 'bossdrop') {
                     for (const p of particles) p.update(cappedDt); particles = particles.filter(p => p.alive);
                     for (const dn of damageNumbers) dn.update(cappedDt); damageNumbers = damageNumbers.filter(dn => dn.alive);
                     for (const dt2 of deathTexts) dt2.update(cappedDt); deathTexts = deathTexts.filter(dt2 => dt2.alive);
+                    if (game.rings) {
+                        for (let i = game.rings.length - 1; i >= 0; i--) {
+                            const rg = game.rings[i];
+                            rg.life -= cappedDt;
+                            if (rg.life <= 0) { game.rings.splice(i, 1); continue; }
+                            const t = 1 - rg.life / rg.maxLife;
+                            rg.r = rg.maxR * (1 - Math.pow(1 - t, 3));
+                        }
+                    }
+                    if (game.levelFlash > 0) game.levelFlash -= cappedDt;
+                    if (game.flashWhite > 0) game.flashWhite -= cappedDt;
+                    updateDust(cappedDt);
                     if (screenShake.elapsed < screenShake.duration) screenShake.elapsed += cappedDt;
                 }
             }
@@ -327,6 +357,12 @@
                 ctx.strokeStyle = 'rgba(255,180,120,0.05)'; ctx.lineWidth = 1;
                 for (let gx = 40; gx < W; gx += 40) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
                 for (let gy = 40; gy < H; gy += 40) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
+                // 背景漂浮尘埃
+                for (const d of dustParticles) {
+                    const da = 0.10 + Math.sin(game.time * 1.5 + d.phase) * 0.07;
+                    ctx.fillStyle = `rgba(255,220,180,${Math.max(0.02, da)})`;
+                    ctx.beginPath(); ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2); ctx.fill();
+                }
                 for (const orb of game.experienceOrbs) {
                     const floatY = Math.sin(game.time * 3 + orb.floatOffset) * 3;
                     const alpha = orb.life < 3 ? orb.life / 3 : 1;
@@ -378,9 +414,49 @@
                 for (const p of particles) p.draw(ctx);
                 for (const dn of damageNumbers) dn.draw(ctx);
                 for (const dt2 of deathTexts) dt2.draw(ctx);
+                // 特效冲击环
+                if (game.rings) {
+                    for (const rg of game.rings) {
+                        const a = clamp(rg.life / rg.maxLife, 0, 1);
+                        ctx.strokeStyle = rg.color;
+                        ctx.globalAlpha = a * 0.9;
+                        ctx.lineWidth = rg.width * (0.5 + a * 0.5);
+                        ctx.beginPath(); ctx.arc(rg.x, rg.y, rg.r, 0, Math.PI * 2); ctx.stroke();
+                    }
+                    ctx.globalAlpha = 1;
+                }
                 ctx.restore();
                 if (game.state === 'levelup' || game.bossDropChoices) {
                     ctx.fillStyle = 'rgba(43,26,18,0.4)'; ctx.fillRect(0, 0, W, H);
+                }
+                // Boss 出场白闪
+                if (game.flashWhite > 0) {
+                    ctx.fillStyle = `rgba(255,255,255,${clamp(game.flashWhite / 0.28, 0, 1) * 0.22})`;
+                    ctx.fillRect(0, 0, W, H);
+                }
+                // 升级金色闪光
+                if (game.levelFlash > 0) {
+                    ctx.fillStyle = `rgba(255,215,0,${clamp(game.levelFlash / 0.35, 0, 1) * 0.16})`;
+                    ctx.fillRect(0, 0, W, H);
+                }
+                // 精英波次预警：屏幕边缘红色脉冲
+                if (game.waveState === 'warning') {
+                    const pulse = 0.5 + Math.sin(game.time * 6) * 0.3;
+                    ctx.strokeStyle = `rgba(255,60,40,${0.16 + pulse * 0.14})`;
+                    ctx.lineWidth = 14;
+                    ctx.strokeRect(7, 7, W - 14, H - 14);
+                }
+                // 低血量警告 vignette
+                if (game.state === 'playing' && game.player) {
+                    const hpRatio = game.player.hp / game.player.maxHp;
+                    if (hpRatio < 0.25) {
+                        const pulse = 0.5 + Math.sin(game.time * 5) * 0.3;
+                        const a = (0.25 - hpRatio) / 0.25 * (0.22 + pulse * 0.12);
+                        const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.32, W / 2, H / 2, Math.max(W, H) * 0.62);
+                        vg.addColorStop(0, 'rgba(255,0,0,0)');
+                        vg.addColorStop(1, `rgba(255,0,0,${clamp(a, 0, 0.38)})`);
+                        ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+                    }
                 }
                 updateHud();
             }

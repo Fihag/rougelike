@@ -161,7 +161,8 @@ const $inp = (id) => document.getElementById(id);
                 deathMark: {
                     enabled: false, mode: 'auto',
                     targets: [], markDuration: 0.5
-                }
+                },
+                rings: [], levelFlash: 0, flashWhite: 0
             };
 
 

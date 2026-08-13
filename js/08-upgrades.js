@@ -148,7 +148,7 @@
                 game.player.relicBomb = hasRelic('relic_bomb');
                 if (game.player.relicBomb) { game.bombTimer = 10; }
                 game.soulShards = 0;
-                game.waveTimer = 60; game.waveState = 'idle'; game.waveEliteLeft = 0; game.waveNoticeTimer = 0;
+                game.waveTimer = 100; game.waveState = 'idle'; game.waveEliteLeft = 0; game.waveNoticeTimer = 0;
                 game.chests = [];
                 game.bombTimer = 0;
                 game.altars = []; game.altarTimer = 45;
@@ -169,6 +169,7 @@
                 game.shadowZones = [];
                 game.shadowTrails = [];
                 game.noBossDrop = false;
+                game.rings = []; game.levelFlash = 0; game.flashWhite = 0;
                 game.deathMark.targets = [];
                 if (typeof syncDeathMarkUI === 'function') syncDeathMarkUI();
                 dbg.pauseGame = false;
@@ -238,6 +239,9 @@
                                 }
                             }
                             spawnParticles(player.x, player.y, 25, '#aaddff', w.radius * 0.6, 0.5, 5);
+                            spawnFx(player.x, player.y, 10, '#e0f6ff', { shape: 'star', glow: true, speed: w.radius * 0.5, life: 0.5, size: 4 });
+                            spawnFx(player.x, player.y, 8, '#ffffff', { shape: 'square', glow: true, rotSpeed: 6, speed: w.radius * 0.4, life: 0.4, size: 2.5, drag: 2 });
+                            game.rings.push({ x: player.x, y: player.y, r: 6, maxR: w.radius, life: 0.45, maxLife: 0.45, color: '#aaddff', width: 4 });
                             sound.play('frost');
                             triggerShake(2, 0.12);
                             w.cooldown = w.cooldownTime * player.getEffectiveCooldownMult();
@@ -264,6 +268,7 @@
                                 sound.play('lightning');
                                 game.chainLightningVisuals.push({ x1: player.x, y1: player.y, x2: current.x, y2: current.y, life: 0.25 });
                                 spawnParticles(current.x, current.y, 5, '#ffff44', 60, 0.3, 3);
+                                spawnFx(current.x, current.y, 4, '#ffffff', { shape: 'cross', glow: true, speed: 55, life: 0.22, size: 3, rotSpeed: 12 });
                                 let prev = current;
                                 for (let b = 0; b < w.bounceCount; b++) {
                                     let nextEnemy = null, minDist = w.bounceRange;
@@ -389,6 +394,7 @@
                                         game.projectiles.push(proj);
                                         sound.play('spirit');
                                         spawnParticles(st.x, st.y, 8, '#b06aff', 70, 0.35, 3);
+                                        spawnFx(st.x, st.y, 4, '#d8b0ff', { shape: 'star', glow: true, speed: 60, life: 0.3, size: 3 });
                                     }
                                 }
                             } else {
@@ -407,6 +413,22 @@
             function drawWeaponsVisuals(player, ctx) {
                 for (const w of player.weapons) {
                     if (w.type === 'orbit_blade') {
+                        // 旋转光带
+                        for (let i = 0; i < w.bladeCount; i++) {
+                            const ba = w.angle + (Math.PI * 2 / w.bladeCount) * i;
+                            ctx.save();
+                            ctx.strokeStyle = 'rgba(140,200,255,0.10)';
+                            ctx.lineWidth = 9;
+                            ctx.beginPath();
+                            ctx.arc(player.x, player.y, w.radius, ba - 0.8, ba + 0.8);
+                            ctx.stroke();
+                            ctx.strokeStyle = 'rgba(190,225,255,0.16)';
+                            ctx.lineWidth = 4;
+                            ctx.beginPath();
+                            ctx.arc(player.x, player.y, w.radius, ba - 0.45, ba + 0.45);
+                            ctx.stroke();
+                            ctx.restore();
+                        }
                         for (let i = 0; i < w.bladeCount; i++) {
                             const ba = w.angle + (Math.PI * 2 / w.bladeCount) * i;
                             const bx = player.x + Math.cos(ba) * w.radius, by = player.y + Math.sin(ba) * w.radius;

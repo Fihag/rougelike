@@ -135,6 +135,8 @@
                         }
                         game.state = 'levelup';
                         game.upgradeCount++;
+                        game.levelFlash = 0.35;
+                        game.rings.push({ x: this.x, y: this.y, r: 10, maxR: 90, life: 0.45, maxLife: 0.45, color: '#ffd700', width: 4 });
                         try {
                             game.currentChoices = generateUpgradeChoices(this);
                             if (!game.currentChoices.length) {

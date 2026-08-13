@@ -1,5 +1,6 @@
             // ==================== 精英波次 & 宝箱 ====================
-            const WAVE_INTERVAL = 60;
+            const WAVE_INTERVAL = 100;
+            const WAVE_INTERVAL_AFTER = 50;
             const WAVE_ELITE_COUNT = 12;
             const WAVE_NOTICE_TIME = 10;
 
@@ -38,7 +39,8 @@
                         const e = new Enemy(x, y, typeKey, game.difficultyLevel + 1);
                         e.hp = Math.floor(e.hp * 2.2); e.maxHp = e.hp;
                         e.damage = Math.floor(e.damage * 1.8);
-                        e.speed = e.speed * 1.25;
+                        // 突袭者（疾行者）限速：精英速度加成从 1.25 降为 1.05
+                        e.speed = e.speed * (typeKey === 'runner' ? 1.05 : 1.25);
                         e.size = e.size * 1.3;
                         e.isElite = true;
                         e.eliteRegen = 0.005;
@@ -181,6 +183,12 @@
                 sound.play('bossWarn');
                 triggerShake(8, 0.5);
                 spawnParticles(x, y, 30, '#ff0000', 80, 0.8, 5);
+                spawnParticles(x, y, 20, '#ffffff', 120, 0.5, 4);
+                spawnFx(x, y, 16, '#ff4444', { shape: 'star', glow: true, speed: 150, life: 0.7, size: 6 });
+                spawnFx(x, y, 20, '#7a7a7a', { speed: 70, life: 0.9, size: 7, gravity: 140, drag: 1.5 });
+                game.flashWhite = 0.28;
+                game.rings.push({ x: x, y: y, r: 12, maxR: 300, life: 0.55, maxLife: 0.55, color: '#ff4444', width: 7 });
+                game.rings.push({ x: x, y: y, r: 6, maxR: 220, life: 0.4, maxLife: 0.4, color: '#ffffff', width: 3 });
             }
 
             // ==================== 超级Boss：暗黑镜像 ====================
@@ -206,4 +214,9 @@
                 sound.play('bossWarn');
                 triggerShake(12, 0.7);
                 spawnParticles(x, y, 40, '#ff00ff', 100, 0.8, 6);
+                spawnFx(x, y, 20, '#ff55ff', { shape: 'star', glow: true, speed: 170, life: 0.8, size: 7 });
+                spawnFx(x, y, 24, '#5a2a7a', { speed: 80, life: 1.0, size: 8, gravity: 150, drag: 1.4 });
+                game.flashWhite = 0.32;
+                game.rings.push({ x: x, y: y, r: 14, maxR: 340, life: 0.6, maxLife: 0.6, color: '#ff55ff', width: 8 });
+                game.rings.push({ x: x, y: y, r: 8, maxR: 250, life: 0.45, maxLife: 0.45, color: '#ffffff', width: 3 });
             }
