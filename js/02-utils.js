@@ -9,6 +9,7 @@
                 let ctx = null;
                 let masterGain = null;
                 let muted = false;
+                try { muted = localStorage.getItem('rogue_muted') === '1'; } catch(e) {}
                 const lastPlayed = {};
 
                 function ensureCtx() {
@@ -87,7 +88,11 @@
                     def.fn();
                 }
 
-                function toggleMute() { muted = !muted; return muted; }
+                function toggleMute() {
+                    muted = !muted;
+                    try { localStorage.setItem('rogue_muted', muted ? '1' : '0'); } catch(e) {}
+                    return muted;
+                }
 
                 window.addEventListener('pointerdown', ensureCtx, { once: true });
                 window.addEventListener('keydown', ensureCtx, { once: true });

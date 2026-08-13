@@ -146,6 +146,7 @@
                 game.player.relicThorn = hasRelic('relic_thorn');
                 game.player.relicGreed = hasRelic('relic_greed');
                 game.player.relicBomb = hasRelic('relic_bomb');
+                if (hasRelic('relic_shield_start')) game.player.oneShotShield = true;
                 if (game.player.relicBomb) { game.bombTimer = 10; }
                 game.soulShards = 0;
                 game.waveTimer = 100; game.waveState = 'idle'; game.waveEliteLeft = 0; game.waveNoticeTimer = 0;

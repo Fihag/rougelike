@@ -1,8 +1,14 @@
             // ==================== 灵魂碎片结算（死亡或返回主菜单时调用） ====================
             function settleShards() {
+                // 击杀数不足 50 不结算碎片
+                if (game.kills < 50) { game.soulShards = 0; return 0; }
                 let shardMult = (DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal).shardMult || 1;
                 game.soulShards = Math.floor(Math.max(0, Math.floor(game.kills / 3) * shardMult));
-                if (game.soulShards > 0) { metaData.shards = (metaData.shards || 0) + game.soulShards; saveMeta(); }
+                if (game.soulShards > 0) {
+                    metaData.shards = (metaData.shards || 0) + game.soulShards;
+                    metaData.earned = (metaData.earned || 0) + game.soulShards;
+                    saveMeta();
+                }
                 return game.soulShards;
             }
 
@@ -155,10 +161,16 @@
 
                 update(dt) {
                     let mx = 0, my = 0;
-                    if (useTouchControl && touchActive) {
-                        const dx = touchTarget.x - this.x, dy = touchTarget.y - this.y;
-                        const d = Math.hypot(dx, dy);
-                        if (d > 8) { mx = dx / d; my = dy / d; }
+                    if (useTouchControl && joystick.active) {
+                        // 虚拟摇杆：方向 = 偏移向量，幅度控制速度比例
+                        const mag = Math.hypot(joystick.dx, joystick.dy);
+                        if (mag > 8) {
+                            mx = joystick.dx / mag;
+                            my = joystick.dy / mag;
+                            const spdScale = Math.min(1, mag / JOYSTICK_R);
+                            mx *= Math.max(0.35, spdScale);
+                            my *= Math.max(0.35, spdScale);
+                        }
                     } else {
                         if (keys['w'] || keys['arrowup']) my -= 1;
                         if (keys['s'] || keys['arrowdown']) my += 1;

@@ -254,11 +254,18 @@
 .dm-modal-btns button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.25); }
 
 /* ===== 暂停面板：返回主菜单按钮 ===== */
+.pause-btns { margin-top: 14px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
 .pause-btn {
-    margin-top: 14px; padding: 8px 22px; font-size: 14px; font-weight: bold;
+    padding: 8px 22px; font-size: 14px; font-weight: bold;
     border: 3px solid var(--brown); border-radius: 16px; cursor: pointer;
     background: linear-gradient(180deg, var(--amber), var(--orange)); color: #fff;
     box-shadow: 0 4px 0 #a86a10; transition: all 0.15s;
 }
 .pause-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #a86a10; }
 .pause-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #a86a10; }
+
+/* ===== 触屏模式：加大触击区域 ===== */
+.touch-mode #ui-buttons button { width: 46px; height: 46px; font-size: 20px; }
+.touch-mode #ui-buttons button svg { width: 24px; height: 24px; }
+.touch-mode .pause-btn { padding: 12px 26px; font-size: 16px; }
+.touch-mode .card { padding: 16px 18px; }

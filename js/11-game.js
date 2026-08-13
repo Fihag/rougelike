@@ -429,6 +429,18 @@
                 if (game.state === 'levelup' || game.bossDropChoices) {
                     ctx.fillStyle = 'rgba(43,26,18,0.4)'; ctx.fillRect(0, 0, W, H);
                 }
+                // 虚拟摇杆绘制
+                if (joystick.active) {
+                    ctx.globalAlpha = 0.30;
+                    ctx.fillStyle = '#fff6e8';
+                    ctx.strokeStyle = '#f4761a';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.arc(joystick.baseX, joystick.baseY, 52, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                    ctx.globalAlpha = 0.6;
+                    ctx.fillStyle = '#ff9f43';
+                    ctx.beginPath(); ctx.arc(joystick.baseX + joystick.dx, joystick.baseY + joystick.dy, 26, 0, Math.PI * 2); ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
                 // Boss 出场白闪
                 if (game.flashWhite > 0) {
                     ctx.fillStyle = `rgba(255,255,255,${clamp(game.flashWhite / 0.28, 0, 1) * 0.22})`;
@@ -513,7 +525,7 @@
                     hudWarning.style.display = 'none';
                 }
                 if (game.time < 4 && game.state === 'playing') {
-                    hudHint.textContent = useTouchControl ? '滑动屏幕移动角色' : 'WASD 移动 · 自动攻击 · 击杀升级';
+                    hudHint.textContent = useTouchControl ? '左半屏拖动移动 · 右半屏点击标记' : 'WASD 移动 · 自动攻击 · 击杀升级';
                     hudHint.style.display = 'block';
                 } else if (hudHint.style.display !== 'none') {
                     hudHint.style.display = 'none';
@@ -741,6 +753,22 @@
                     btnPause.innerHTML = ICONS.pause;
                     const dbgPauseEl = $inp('dbg-pause'); if (dbgPauseEl) dbgPauseEl.checked = false;
                     showMenu();
+                    if (got > 0) {
+                        game.warningText = `已结算 ${got} 灵魂碎片`;
+                        game.warningTimer = 1.5;
+                    }
+                });
+            }
+            // ===== 暂停面板：重新开始本局（结算后直接重开） =====
+            if (pauseRestartBtn) {
+                pauseRestartBtn.addEventListener('click', () => {
+                    if (game.state !== 'playing') return;
+                    const got = settleShards();
+                    dbg.pauseGame = false;
+                    btnPause.innerHTML = ICONS.pause;
+                    const dbgPauseEl = $inp('dbg-pause'); if (dbgPauseEl) dbgPauseEl.checked = false;
+                    initGame();
+                    lastTime = performance.now(); accumulator = 0;
                     if (got > 0) {
                         game.warningText = `已结算 ${got} 灵魂碎片`;
                         game.warningTimer = 1.5;

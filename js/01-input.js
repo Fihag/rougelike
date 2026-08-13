@@ -2,8 +2,9 @@
             const keys = {};
             let mousePos = { x: W / 2, y: H / 2 };
             let useTouchControl = false;
-            let touchActive = false;
-            let touchTarget = { x: 0, y: 0 };
+            // 虚拟摇杆（左半屏拖动控制移动，右半屏点按用于手动标记）
+            const joystick = { active: false, id: null, baseX: 0, baseY: 0, dx: 0, dy: 0 };
+            const JOYSTICK_R = 55;
 
             window.addEventListener('keydown', e => { if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')) return; keys[e.key.toLowerCase()] = true; e.preventDefault(); });
             window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; e.preventDefault(); });
@@ -27,29 +28,58 @@
             canvas.addEventListener('touchstart', e => {
                 e.preventDefault();
                 useTouchControl = true;
-                touchActive = true;
-                const t = e.touches[0];
+                document.body.classList.add('touch-mode');
                 const rect = canvas.getBoundingClientRect();
-                touchTarget.x = t.clientX - rect.left;
-                touchTarget.y = t.clientY - rect.top;
-                mousePos.x = touchTarget.x;
-                mousePos.y = touchTarget.y;
-                if (game.state === 'levelup') handleLevelupTouch(e);
+                for (const t of e.changedTouches) {
+                    const tx = t.clientX - rect.left, ty = t.clientY - rect.top;
+                    // 升级状态：全屏选择升级卡
+                    if (game.state === 'levelup') { handleLevelupTouch(e); continue; }
+                    if (tx < rect.width / 2) {
+                        // 左半屏：激活虚拟摇杆
+                        if (!joystick.active) {
+                            joystick.active = true;
+                            joystick.id = t.identifier;
+                            joystick.baseX = tx; joystick.baseY = ty;
+                            joystick.dx = 0; joystick.dy = 0;
+                        }
+                    } else {
+                        // 右半屏：死神之指手动标记
+                        mousePos.x = tx; mousePos.y = ty;
+                        if (game.deathMark.enabled && game.deathMark.mode === 'manual' && game.state === 'playing') {
+                            if (dmTrySelectAt(tx, ty)) {
+                                sound.play('bossWarn');
+                                game.warningText = '已标记目标！抹杀倒计时…';
+                                game.warningTimer = 1.2;
+                            }
+                        }
+                    }
+                }
             }, { passive: false });
             canvas.addEventListener('touchmove', e => {
                 e.preventDefault();
-                if (!touchActive) return;
-                const t = e.touches[0];
+                if (!joystick.active) return;
                 const rect = canvas.getBoundingClientRect();
-                touchTarget.x = t.clientX - rect.left;
-                touchTarget.y = t.clientY - rect.top;
-                mousePos.x = touchTarget.x;
-                mousePos.y = touchTarget.y;
+                for (const t of e.changedTouches) {
+                    if (t.identifier !== joystick.id) continue;
+                    const tx = t.clientX - rect.left, ty = t.clientY - rect.top;
+                    let dx = tx - joystick.baseX, dy = ty - joystick.baseY;
+                    const mag = Math.hypot(dx, dy);
+                    if (mag > JOYSTICK_R) { dx = dx / mag * JOYSTICK_R; dy = dy / mag * JOYSTICK_R; }
+                    joystick.dx = dx; joystick.dy = dy;
+                }
             }, { passive: false });
-            canvas.addEventListener('touchend', e => {
+            function joystickRelease(e) {
                 e.preventDefault();
-                touchActive = false;
-            }, { passive: false });
+                for (const t of e.changedTouches) {
+                    if (t.identifier === joystick.id) {
+                        joystick.active = false;
+                        joystick.id = null;
+                        joystick.dx = 0; joystick.dy = 0;
+                    }
+                }
+            }
+            canvas.addEventListener('touchend', joystickRelease, { passive: false });
+            canvas.addEventListener('touchcancel', joystickRelease, { passive: false });
 
             window.addEventListener('keydown', function selectHandler(e) {
                 if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')) return;

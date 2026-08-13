@@ -12,6 +12,7 @@
                 { id: 'relic_thorn', name: '荆棘光环', desc: '受到近战伤害时反弹 20% 给攻击者', icon: 'shield-half', cost: 400 },
                 { id: 'relic_greed', name: '贪婪之石', desc: '经验球自动飞向玩家（无需靠近）', icon: 'magnet', cost: 300 },
                 { id: 'relic_bomb',  name: '定时炸弹', desc: '每 10 秒在玩家位置爆炸（伤害随等级提升）', icon: 'bomb', cost: 450 },
+                { id: 'relic_shield_start', name: '开局护盾', desc: '每局开局获得一次抵挡伤害的护盾', icon: 'shield', cost: 400 },
                 { id: 'relic_deathmark', name: '死神之指', desc: '解锁死神之指：标记目标并抹杀（手动可标记 Boss）', icon: 'skull', cost: 5999 }
             ];
             // ===== 成就系统（局外碎片奖励） =====
@@ -19,7 +20,10 @@
                 { id: 'melee_master', name: '近战大师', desc: '只用飞刃/冰霜击杀一个 Boss（本局未用远程武器）', reward: 60 },
                 { id: 'speedster',    name: '闪电侠', desc: '60 秒内击杀 200 只怪物', reward: 50 },
                 { id: 'phoenix',      name: '不死鸟', desc: '生命低于 10% 时存活并击杀 Boss', reward: 40 },
-                { id: 'collector',    name: '收集狂', desc: '一局内集齐 3 种进化武器', reward: 80 }
+                { id: 'collector',    name: '收集狂', desc: '一局内集齐 3 种进化武器', reward: 80 },
+                { id: 'slayer_500',   name: '千军斩', desc: '单局击杀 500 只怪物', reward: 60 },
+                { id: 'boss_hunter',  name: '屠戮者', desc: '单局击杀 3 个 Boss', reward: 80 },
+                { id: 'rich_shards',  name: '大富翁', desc: '累计获得 1000 灵魂碎片', reward: 100 }
             ];
             let achievementsDone = loadAchievements();
             function loadAchievements() {
@@ -39,6 +43,7 @@
                 achievementsDone[id] = true;
                 saveAchievements();
                 metaData.shards = (metaData.shards || 0) + a.reward;
+                metaData.earned = (metaData.earned || 0) + a.reward;
                 saveMeta();
                 game.warningText = '成就达成！' + a.name + '（+' + a.reward + '碎片）';
                 game.warningTimer = 2.5;
@@ -61,6 +66,12 @@
                     const hasRanged = game.player.weapons.some(w => w.type !== 'orbit_blade' && w.type !== 'frost_nova');
                     if (!hasRanged && game.bossKilledCount > 0) awardAchievement('melee_master');
                 }
+                // 千军斩：单局击杀 500
+                if (!achievementsDone.slayer_500 && game.kills >= 500) awardAchievement('slayer_500');
+                // 屠戮者：单局击杀 3 个 Boss
+                if (!achievementsDone.boss_hunter && game.bossKilledCount >= 3) awardAchievement('boss_hunter');
+                // 大富翁：累计获得 1000 碎片
+                if (!achievementsDone.rich_shards && (metaData.earned || 0) >= 1000) awardAchievement('rich_shards');
             }
             // ===== 存档签名（防小白改数值：篡改后签名不匹配，数据视为无效并清除） =====
             const META_SALT = 'r0gue.m3ta!sig#v1';
@@ -84,6 +95,12 @@
                         if (sig) {
                             if (sig === metaSign(d)) {
                                 if (!d.relics) d.relics = {};
+                                if (d.earned === undefined) {
+                                    // 旧存档迁移：补累计碎片字段并重新签名
+                                    d.earned = d.shards || 0;
+                                    localStorage.setItem('rogue_meta', JSON.stringify(d));
+                                    localStorage.setItem('rogue_meta_sig', metaSign(d));
+                                }
                                 return d;
                             }
                             // 签名不匹配：视为篡改数据，直接清除
@@ -92,12 +109,13 @@
                         } else {
                             // 旧版存档：一次性补签名（此后篡改即失效）
                             if (!d.relics) d.relics = {};
+                            if (d.earned === undefined) d.earned = d.shards || 0;
                             localStorage.setItem('rogue_meta_sig', metaSign(d));
                             return d;
                         }
                     }
                 } catch(e) {}
-                return { shards: 0, upgrades: {}, relics: {} };
+                return { shards: 0, upgrades: {}, relics: {}, earned: 0 };
             }
 
             let metaData = loadMeta();
