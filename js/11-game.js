@@ -627,28 +627,30 @@
                 sep.style.cssText = 'font-weight:bold;color:var(--orange-deep);font-size:14px;margin:8px 0 2px;letter-spacing:0.05em;';
                 sep.textContent = '—— 圣物商店 ——';
                 metaList.appendChild(sep);
-                // 圣物（永久生效）
+                // 圣物（永久生效；带 maxLevel 的可升级）
                 for (const r of META_RELICS) {
-                    const owned = hasRelic(r.id);
+                    const lv = relicLevel(r.id);
+                    const maxLv = r.maxLevel || 1;
                     const item = document.createElement('div');
                     item.className = 'meta-item';
                     const info = document.createElement('div');
                     info.className = 'mi-info';
                     const name = document.createElement('div');
                     name.className = 'mi-name';
-                    name.innerHTML = `${ICONS[r.icon] || ''} ${r.name}`;
+                    name.innerHTML = `${ICONS[r.icon] || ''} ${r.name}` + (maxLv > 1 && lv > 0 ? ` <span class="mi-lv">Lv.${lv}/${maxLv}</span>` : '');
                     const desc = document.createElement('div');
                     desc.className = 'mi-desc';
-                    desc.textContent = r.desc;
+                    desc.textContent = typeof r.desc === 'function' ? r.desc(Math.max(1, lv)) : r.desc;
                     info.appendChild(name); info.appendChild(desc);
                     item.appendChild(info);
                     const btn = document.createElement('button');
-                    if (owned) {
-                        btn.textContent = '已拥有';
+                    if (lv >= maxLv) {
+                        btn.textContent = maxLv > 1 ? '已满级' : '已拥有';
                         btn.disabled = true;
                     } else {
-                        btn.textContent = `${r.cost} 碎片`;
-                        btn.disabled = (metaData.shards || 0) < r.cost;
+                        const cost = lv === 0 ? r.cost : (r.upgradeCost || r.cost);
+                        btn.textContent = lv === 0 ? `${cost} 碎片` : `升级到 Lv.${lv + 1}（${cost} 碎片）`;
+                        btn.disabled = (metaData.shards || 0) < cost;
                         btn.addEventListener('click', () => {
                             // 死神之指：先弹出使用说明确认框，再购买
                             if (r.id === 'relic_deathmark') {

@@ -3,6 +3,8 @@
                 // 击杀数不足 50 不结算碎片
                 if (game.kills < 50) { game.soulShards = 0; return 0; }
                 let shardMult = (DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal).shardMult || 1;
+                // 财富之心：每局结算碎片 ×1.2
+                if (hasRelic('relic_shard_boost')) shardMult *= 1.2;
                 game.soulShards = Math.floor(Math.max(0, Math.floor(game.kills / 3) * shardMult));
                 if (game.soulShards > 0) {
                     metaData.shards = (metaData.shards || 0) + game.soulShards;
@@ -38,6 +40,8 @@
                     ];
                 }
                 getEffectivePickupRange() { return this.pickupRange * this.pickupRangeMultiplier; }
+                // 风险祭坛增益：剩余时间 >0 时伤害 ×1.5
+                getRiskMult() { return this.riskBuffTimer > 0 ? 1.5 : 1; }
                 getEffectiveSpeed() { return this.speed * this.speedMultiplier * (this.slowTimer > 0 ? (1 - this.slowAmount) : 1) * (this.burstTimer > 0 ? 1.4 : 1); }
                 getEffectiveCooldownMult() { return (this.globalCooldownMultiplier || 1) * (this.burstTimer > 0 ? 0.6 : 1); }
 
@@ -184,6 +188,7 @@
                     this.y = clamp(this.y, this.size, H - this.size);
                     if (this.invincibleTimer > 0) this.invincibleTimer -= dt;
                     if (this.flashTimer > 0) this.flashTimer -= dt;
+                    if (this.riskBuffTimer > 0) this.riskBuffTimer -= dt;
                     if (this.slowTimer > 0) this.slowTimer -= dt;
                     if (this.revengeTimer > 0) this.revengeTimer -= dt;
                     if (this.burstTimer > 0) this.burstTimer -= dt;

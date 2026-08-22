@@ -1,18 +1,20 @@
             // ==================== 灵魂宝库（局外永久成长） ====================
             const META_UPGRADES = [
-                { id: 'hp',    name: '生命之种', desc: (l) => '初始生命 +' + (20 * l) + '（每级+20）', icon: 'heart-pulse', maxLevel: 3, costs: [150, 320, 650] },
-                { id: 'dmg',   name: '力量符文', desc: (l) => '初始伤害 +' + (10 * l) + '%（每级+10%）', icon: 'flame', maxLevel: 5, costs: [150, 320, 650, 1200, 2000] },
-                { id: 'pickup',name: '磁力石',   desc: (l) => '拾取范围 +' + (20 * l) + '%（每级+20%）', icon: 'magnet', maxLevel: 3, costs: [120, 260, 520] },
-                { id: 'xp',    name: '智慧书',   desc: (l) => '经验加成 +' + (15 * l) + '%（每级+15%）', icon: 'book-open', maxLevel: 3, costs: [120, 260, 520] },
-                { id: 'revive',name: '凤凰之羽', desc: (l) => '每局死亡时复活一次（50%血量）', icon: 'flame', maxLevel: 1, costs: [900] }
+                { id: 'hp',    name: '生命之种', desc: (l) => '初始生命 +' + (20 * l) + '（每级+20）', icon: 'heart-pulse', maxLevel: 3, costs: [120, 250, 520] },
+                { id: 'dmg',   name: '力量符文', desc: (l) => '初始伤害 +' + (10 * l) + '%（每级+10%）', icon: 'flame', maxLevel: 5, costs: [120, 250, 520, 960, 1600] },
+                { id: 'pickup',name: '磁力石',   desc: (l) => '拾取范围 +' + (20 * l) + '%（每级+20%）', icon: 'magnet', maxLevel: 3, costs: [90, 200, 410] },
+                { id: 'xp',    name: '智慧书',   desc: (l) => '经验加成 +' + (15 * l) + '%（每级+15%）', icon: 'book-open', maxLevel: 3, costs: [90, 200, 410] },
+                { id: 'revive',name: '凤凰之羽', desc: (l) => '每局死亡时复活一次（50%血量）', icon: 'flame', maxLevel: 1, costs: [720] }
             ];
-            // ===== 圣物商店（局外购买，永久生效） =====
+            // ===== 圣物商店（局外购买，永久生效；带 maxLevel 的圣物可升级） =====
             const META_RELICS = [
-                { id: 'relic_vamp',  name: '吸血之爪', desc: '造成伤害的 5% 回复生命', icon: 'heart-pulse', cost: 400 },
-                { id: 'relic_thorn', name: '荆棘光环', desc: '受到近战伤害时反弹 20% 给攻击者', icon: 'shield-half', cost: 400 },
-                { id: 'relic_greed', name: '贪婪之石', desc: '经验球自动飞向玩家（无需靠近）', icon: 'magnet', cost: 300 },
-                { id: 'relic_bomb',  name: '定时炸弹', desc: '每 10 秒在玩家位置爆炸（伤害随等级提升）', icon: 'bomb', cost: 450 },
-                { id: 'relic_shield_start', name: '开局护盾', desc: '每局开局获得一次抵挡伤害的护盾', icon: 'shield', cost: 400 },
+                { id: 'relic_vamp',  name: '吸血之爪', desc: '造成伤害的 5% 回复生命', icon: 'heart-pulse', cost: 320 },
+                { id: 'relic_thorn', name: '荆棘光环', desc: '受到近战伤害时反弹 50% 给攻击者', icon: 'shield-half', cost: 320 },
+                { id: 'relic_greed', name: '贪婪之石', desc: '经验球自动飞向玩家（无需靠近）', icon: 'magnet', cost: 240 },
+                { id: 'relic_bomb',  name: '定时炸弹', desc: '每 10 秒在玩家位置爆炸（伤害随等级提升）', icon: 'bomb', cost: 360 },
+                { id: 'relic_shield_start', name: '开局护盾', icon: 'shield', cost: 300, maxLevel: 5, upgradeCost: 400,
+                    desc: (lv) => '开局获得灵魂护盾：护盾量 ' + (50 + 30 * (lv - 1)) + '，' + Math.max(4, 15 - 3 * (lv - 1)) + ' 秒自动恢复' },
+                { id: 'relic_shard_boost', name: '财富之心', desc: '每局结算的灵魂碎片 ×1.2', icon: 'coins', cost: 650 },
                 { id: 'relic_deathmark', name: '死神之指', desc: '解锁死神之指：标记目标并抹杀（手动可标记 Boss）', icon: 'skull', cost: 5999 }
             ];
             // ===== 成就系统（局外碎片奖励） =====
@@ -120,12 +122,24 @@
 
             let metaData = loadMeta();
             function hasRelic(id) { return !!(metaData.relics && metaData.relics[id]); }
+            // 圣物等级：可升级圣物存数字等级，普通圣物为 true（视为 1 级），未拥有为 0
+            function relicLevel(id) {
+                const v = metaData.relics && metaData.relics[id];
+                if (!v) return 0;
+                return typeof v === 'number' ? v : 1;
+            }
+            // 购买/升级圣物：首次购买按 cost，已拥有可升级圣物按 upgradeCost 升一级
             function buyRelic(id) {
                 const r = META_RELICS.find(x => x.id === id);
-                if (!r || hasRelic(id) || metaData.shards < r.cost) return false;
-                metaData.shards -= r.cost;
+                if (!r) return false;
+                const lv = relicLevel(id);
+                const maxLv = r.maxLevel || 1;
+                if (lv >= maxLv) return false;
+                const cost = lv === 0 ? r.cost : (r.upgradeCost || r.cost);
+                if (metaData.shards < cost) return false;
+                metaData.shards -= cost;
                 if (!metaData.relics) metaData.relics = {};
-                metaData.relics[id] = true;
+                metaData.relics[id] = lv + 1;
                 saveMeta();
                 return true;
             }

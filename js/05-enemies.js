@@ -17,8 +17,7 @@
                 { id: 'rage_potion', name: '怒火药剂', icon: 'flame', desc: '伤害 +15%', apply: (p) => { p.globalDamageMultiplier = (p.globalDamageMultiplier || 1) + 0.15; } },
                 { id: 'life_spring', name: '生命之泉', icon: 'heart-pulse', desc: '最大生命+15%并回满', apply: (p) => { p.maxHp = Math.floor(p.maxHp * 1.15); p.hp = p.maxHp; spawnParticles(p.x, p.y, 20, '#55ff88', 60, 0.5, 4); } },
                 { id: 'exp_crystal', name: '经验结晶', icon: 'gem', desc: '经验获取 +10%', apply: (p) => { p.expMultiplier = (p.expMultiplier || 1) + 0.10; } },
-                { id: 'attack_speed_orb', name: '攻速宝珠', icon: 'zap', desc: '所有武器冷却 -10%', apply: (p) => { p.globalCooldownMultiplier = (p.globalCooldownMultiplier || 1) * 0.90; } },
-                { id: 'soul_shield', name: '灵魂护盾', icon: 'shield', desc: (p) => (p.soulShieldLevel ? '护盾量+30，恢复-3秒' : '护盾量50，15秒恢复'), apply: (p) => { p.soulShield = true; p.soulShieldLevel = (p.soulShieldLevel || 0) + 1; if (p.soulShieldLevel === 1) { p.soulShieldMax = 50; p.soulShieldRegenTime = 15; p.soulShieldAmount = 50; } else { p.soulShieldMax += 30; p.soulShieldRegenTime = Math.max(4, p.soulShieldRegenTime - 3); p.soulShieldAmount = p.soulShieldMax; } } }
+                { id: 'attack_speed_orb', name: '攻速宝珠', icon: 'zap', desc: '所有武器冷却 -10%', apply: (p) => { p.globalCooldownMultiplier = (p.globalCooldownMultiplier || 1) * 0.90; } }
             ];
 
             // ==================== 敌人类 ====================
@@ -226,7 +225,7 @@
                             if (!game.noBossDrop && !game.bossDropPending) {
                                 game.bossDropPending = true;
                                 const runId = game.runId;
-                                const pool = BOSS_DROP_ITEMS.filter(it => !(it.id === 'soul_shield' && (game.player.soulShieldLevel || 0) >= 2));
+                                const pool = BOSS_DROP_ITEMS;
                                 const shuffled = [...pool].sort(() => Math.random() - 0.5);
                                 const choices = shuffled.slice(0, 3);
                                 const showDropWhenReady = () => {
@@ -487,9 +486,9 @@
                             }
                         } else if (!this.isRanged) {
                             player.takeDamage(this.damage);
-                            // 荆棘光环：反弹 20% 近战伤害给攻击者
+                            // 荆棘光环：反弹 50% 近战伤害给攻击者
                             if (player.relicThorn && this.alive) {
-                                this.takeDamage(Math.max(1, Math.floor(this.damage * 0.2)), 'thorn');
+                                this.takeDamage(Math.max(1, Math.floor(this.damage * 0.5)), 'thorn');
                                 spawnParticles(this.x, this.y, 6, '#88dd55', 60, 0.3, 3);
                             }
                             const pushDx = this.x - player.x, pushDy = this.y - player.y, pushD = Math.hypot(pushDx, pushDy) || 1;

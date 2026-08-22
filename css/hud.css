@@ -135,6 +135,7 @@
             #hud-warning { font-size: 20px; top: 26%; }
             #hud-hint { bottom: 30px; font-size: 11px; }
             #ui-buttons { top: calc(70px + env(safe-area-inset-top, 0px)); right: calc(8px + env(safe-area-inset-right, 0px)); }
+            #btn-fs { bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
         }
         .touch-mode #hud-weps { font-size: 13px; }
         .touch-mode .chip { font-size: 12px; padding: 3px 9px; }

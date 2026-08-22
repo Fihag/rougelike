@@ -113,9 +113,10 @@
                     spawnFx(p.x, p.y, 10, '#ffffff', { shape: 'cross', glow: true, speed: 60, life: 0.5, size: 4, rotSpeed: 4 });
                     sound.play('levelup');
                 } else if (a.type === 'risk') {
-                    p.hp = 1;
+                    // 风险换输出：生命降低 50%（至少保留 1 点），伤害 +50%（30 秒）
+                    p.hp = Math.max(1, Math.floor(p.hp * 0.5));
                     p.riskBuffTimer = 30;
-                    game.warningText = '风险祭坛：生命降至 1！伤害 +50%（30秒）';
+                    game.warningText = '风险祭坛：生命降低 50%！伤害 +50%（30秒）';
                     spawnParticles(p.x, p.y, 30, '#ff2222', 120, 0.6, 5);
                     sound.play('playerHit');
                 } else {
