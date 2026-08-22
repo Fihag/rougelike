@@ -27,6 +27,7 @@
             background: #2b1a12;
         }
         @media (max-width: 768px) {
-            #game-wrapper { border-radius: 0; border: none; max-width: 100vw; max-height: 100vh; aspect-ratio: auto; }
+            #game-wrapper { border-radius: 0; border: none; max-width: 100vw; max-height: 100vh; aspect-ratio: auto; height: 100vh; height: 100dvh; }
         }
+        body.in-fullscreen #game-wrapper { border: none; border-radius: 0; max-width: 100vw; max-height: 100vh; }
         canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }

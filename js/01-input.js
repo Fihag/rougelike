@@ -2,7 +2,7 @@
             const keys = {};
             let mousePos = { x: W / 2, y: H / 2 };
             let useTouchControl = false;
-            // 虚拟摇杆（左半屏拖动控制移动，右半屏点按用于手动标记）
+            // 虚拟摇杆（任意位置触摸激活移动摇杆；手动死神之指改为直接点按敌人标记）
             const joystick = { active: false, id: null, baseX: 0, baseY: 0, dx: 0, dy: 0 };
             const JOYSTICK_R = 55;
 
@@ -32,26 +32,24 @@
                 const rect = canvas.getBoundingClientRect();
                 for (const t of e.changedTouches) {
                     const tx = t.clientX - rect.left, ty = t.clientY - rect.top;
-                    // 升级状态：全屏选择升级卡
+                    // 升级状态：点按选择升级卡
                     if (game.state === 'levelup') { handleLevelupTouch(e); continue; }
-                    if (tx < rect.width / 2) {
-                        // 左半屏：激活虚拟摇杆
-                        if (!joystick.active) {
-                            joystick.active = true;
-                            joystick.id = t.identifier;
-                            joystick.baseX = tx; joystick.baseY = ty;
-                            joystick.dx = 0; joystick.dy = 0;
+                    // 死神之指手动模式：指头直接落在敌人身上时标记，否则该触点作为摇杆
+                    if (game.state === 'playing' && game.deathMark.enabled && game.deathMark.mode === 'manual') {
+                        if (dmTrySelectAt(tx, ty)) {
+                            sound.play('bossWarn');
+                            game.warningText = '已标记目标！抹杀倒计时…';
+                            game.warningTimer = 1.2;
+                            continue;
                         }
-                    } else {
-                        // 右半屏：死神之指手动标记
-                        mousePos.x = tx; mousePos.y = ty;
-                        if (game.deathMark.enabled && game.deathMark.mode === 'manual' && game.state === 'playing') {
-                            if (dmTrySelectAt(tx, ty)) {
-                                sound.play('bossWarn');
-                                game.warningText = '已标记目标！抹杀倒计时…';
-                                game.warningTimer = 1.2;
-                            }
-                        }
+                    }
+                    // 任意位置：激活虚拟摇杆（贴边时收敛，避免摇杆画到屏幕外）
+                    if (game.state === 'playing' && !joystick.active) {
+                        joystick.active = true;
+                        joystick.id = t.identifier;
+                        joystick.baseX = clamp(tx, JOYSTICK_R, Math.max(JOYSTICK_R, rect.width - JOYSTICK_R));
+                        joystick.baseY = clamp(ty, JOYSTICK_R, Math.max(JOYSTICK_R, rect.height - JOYSTICK_R));
+                        joystick.dx = 0; joystick.dy = 0;
                     }
                 }
             }, { passive: false });

@@ -106,22 +106,12 @@
             function activateAltar(a) {
                 const p = game.player;
                 if (a.type === 'heal') {
+                    // 血包：纯增益，回复 50% 生命（无负面作用）
                     p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.5);
-                    game.warningText = '治疗祭坛：回复 50% 生命！但精英被惊动了…';
+                    game.warningText = '治疗祭坛：回复 50% 生命！';
                     spawnParticles(p.x, p.y, 30, '#55ff88', 110, 0.6, 5);
-                    // 周围刷 3 只精英
-                    for (let i = 0; i < 3; i++) {
-                        const ang = rand(0, Math.PI * 2);
-                        const ex = clamp(p.x + Math.cos(ang) * 140, 30, W - 30);
-                        const ey = clamp(p.y + Math.sin(ang) * 140, 30, H - 30);
-                        const types = ['zombie', 'runner', 'brute', 'wraith'];
-                        const typeKey = types[randInt(0, types.length - 1)];
-                        const e = new Enemy(ex, ey, typeKey, game.difficultyLevel + 1);
-                        e.hp = Math.floor(e.hp * 1.6); e.maxHp = e.hp;
-                        e.damage = Math.floor(e.damage * 1.4);
-                        e.isElite = true;
-                        game.enemies.push(e);
-                    }
+                    spawnFx(p.x, p.y, 10, '#ffffff', { shape: 'cross', glow: true, speed: 60, life: 0.5, size: 4, rotSpeed: 4 });
+                    sound.play('levelup');
                 } else if (a.type === 'risk') {
                     p.hp = 1;
                     p.riskBuffTimer = 30;

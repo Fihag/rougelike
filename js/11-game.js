@@ -525,7 +525,11 @@
                     hudWarning.style.display = 'none';
                 }
                 if (game.time < 4 && game.state === 'playing') {
-                    hudHint.textContent = useTouchControl ? '左半屏拖动移动 · 右半屏点击标记' : 'WASD 移动 · 自动攻击 · 击杀升级';
+                    if (useTouchControl) {
+                        hudHint.textContent = game.deathMark.enabled && game.deathMark.mode === 'manual' ? '屏幕任意位置拖动移动 · 点击敌人标记' : '屏幕任意位置拖动移动';
+                    } else {
+                        hudHint.textContent = 'WASD 移动 · 自动攻击 · 击杀升级';
+                    }
                     hudHint.style.display = 'block';
                 } else if (hudHint.style.display !== 'none') {
                     hudHint.style.display = 'none';
@@ -712,6 +716,44 @@
                 const dbgPauseEl = $inp('dbg-pause'); if (dbgPauseEl) dbgPauseEl.checked = dbg.pauseGame;
             });
             btnMute.addEventListener('click', () => { btnMute.innerHTML = sound.toggleMute() ? ICONS['volume-x'] : ICONS['volume-2']; });
+            // ===== 全屏切换（移动端/桌面通用） =====
+            let fsToastTimer = null;
+            function showFsToast(msg) {
+                fsToast.textContent = msg;
+                fsToast.classList.add('show');
+                clearTimeout(fsToastTimer);
+                fsToastTimer = setTimeout(() => fsToast.classList.remove('show'), 1600);
+            }
+            function isFullscreen() {
+                return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+            }
+            function enterFullscreen() {
+                const el = document.documentElement;
+                const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+                if (!req) return Promise.reject(new Error('unsupported'));
+                return req.call(el);
+            }
+            function exitFullscreen() {
+                const ex = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+                if (!ex) return Promise.reject(new Error('unsupported'));
+                return ex.call(document);
+            }
+            btnFs.addEventListener('click', () => {
+                const goingFs = !isFullscreen();
+                const p = goingFs ? enterFullscreen() : exitFullscreen();
+                if (p && p.catch) p.catch(() => showFsToast('当前浏览器不支持全屏'));
+            });
+            function syncFsIcon() {
+                const fs = isFullscreen();
+                btnFs.innerHTML = fs ? ICONS.compress : ICONS.expand;
+                btnFs.title = fs ? '退出全屏' : '全屏';
+                document.body.classList.toggle('in-fullscreen', fs);
+            }
+            document.addEventListener('fullscreenchange', syncFsIcon);
+            document.addEventListener('webkitfullscreenchange', syncFsIcon);
+            document.addEventListener('mozfullscreenchange', syncFsIcon);
+            document.addEventListener('MSFullscreenChange', syncFsIcon);
+            syncFsIcon();
             // ===== 死神之指按钮：点击切换模式（需在灵魂宝库购买解锁） =====
             btnDeathMark.addEventListener('click', (e) => {
                 if (!game.deathMark.enabled) return;

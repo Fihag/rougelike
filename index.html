@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>魔法幸存者 · 怪物增强版</title>
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/hud.css">
@@ -104,7 +104,7 @@
                 <button class="skip-btn" id="skip-upgrade"><span class="btn-ico" data-ico="shuffle"></span>换一批</button>
                 <button class="skip-btn skip-xp" id="skip-xp"><span class="btn-ico" data-ico="coins"></span>跳过（+50%经验）</button>
             </div>
-            <p style="color:#888;font-size:0.7em;margin:0;">按键盘 1 / 2 / 3 / 4 / 5 快速选择</p>
+            <p class="key-hint" style="color:#888;font-size:0.7em;margin:0;">按键盘 1 / 2 / 3 / 4 / 5 快速选择</p>
         </div>
         <div id="bossdrop-panel" style="display:none;">
             <h2><span class="title-ico" data-ico="gift"></span>Boss掉落！选择一件道具</h2>
@@ -128,8 +128,10 @@
             <button id="btn-pause" title="暂停 (P)" data-ico="pause"></button>
             <button id="btn-mute" title="静音 (M)" data-ico="volume-2"></button>
             <span id="ui-btn-gap"></span>
+            <button id="btn-fs" title="全屏" data-ico="expand"></button>
             <button id="btn-death-mark" title="死神之指（点击切换自动/手动）" data-ico="skull" style="display:none;"></button>
         </div>
+        <div id="fs-toast"></div>
         </div>
         <script src="js/00-const.js"></script>
         <script src="js/01-input.js"></script>
