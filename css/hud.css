@@ -93,6 +93,22 @@
         #ui-buttons button:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.2); }
         #ui-btn-gap { width: 26px; }
 
+        /* ===== 全屏按钮（独立右下角，避免与右上角暂停/静音/死神之指挤在一起） ===== */
+        #btn-fs {
+            position: absolute; right: calc(12px + env(safe-area-inset-right, 0px));
+            bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+            z-index: 45; width: 44px; height: 44px; border-radius: 50%;
+            border: 2px solid var(--line); background: rgba(255,246,232,0.85);
+            color: var(--brown); cursor: pointer; padding: 0;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.2); transition: all 0.15s;
+        }
+        #btn-fs svg { width: 22px; height: 22px; }
+        #btn-fs:hover { transform: translateY(-1px) scale(1.05); border-color: var(--orange); }
+        #btn-fs:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.2); }
+        .touch-mode #btn-fs { width: 54px; height: 54px; }
+        .touch-mode #btn-fs svg { width: 26px; height: 26px; }
+
         /* ===== 全屏提示浮层 ===== */
         #fs-toast {
             position: absolute; left: 50%; bottom: 20%; transform: translateX(-50%) translateY(8px);
