@@ -3,8 +3,8 @@
                 // 击杀数不足 50 不结算碎片
                 if (game.kills < 50) { game.soulShards = 0; return 0; }
                 let shardMult = (DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal).shardMult || 1;
-                // 财富之心：每局结算碎片 ×1.2
-                if (hasRelic('relic_shard_boost')) shardMult *= 1.2;
+                // 财富之心（需穿戴生效）：每局结算碎片 ×1.2
+                if (isRelicActive('relic_shard_boost')) shardMult *= 1.2;
                 game.soulShards = Math.floor(Math.max(0, Math.floor(game.kills / 3) * shardMult));
                 if (game.soulShards > 0) {
                     metaData.shards = (metaData.shards || 0) + game.soulShards;
@@ -20,7 +20,7 @@
                     this.x = W / 2; this.y = H / 2; this.size = 14;
                     this.speed = 260; this.speedMultiplier = 1;
                     this.hp = 100; this.maxHp = 100;
-                    this.hpRegenPercent = 0.012;
+                    this.hpRegenPercent = 0.017;
                     this.damageReduction = 0; this.flatArmor = 0;
                     this.globalDamageMultiplier = 1;
                     this.globalCooldownMultiplier = 1;

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>魔法幸存者 · 怪物增强版</title>
+    <title>魔法幸存者</title>
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/hud.css">
     <link rel="stylesheet" href="css/panels.css">
@@ -44,7 +44,7 @@
         <div id="menu-overlay">
             <div class="menu-box">
                 <div class="menu-logo">魔法幸存者</div>
-                <div class="menu-sub">怪物增强版 · 肉鸽割草</div>
+                <div class="menu-sub">轻量生存小游戏</div>
                 <div class="menu-sec">
                     <div class="menu-label">选择难度</div>
                     <div class="menu-row" id="menu-diffs"></div>
@@ -59,12 +59,12 @@
                     <button class="menu-meta-btn" id="btn-open-meta">灵魂宝库</button>
                 </div>
                 <button class="menu-start" id="menu-start">开始游戏</button>
-                <div class="menu-hint">WASD 移动 · 自动攻击 · 击杀升级</div>
+                <div class="menu-hint">键鼠 / 触屏均可操作</div>
             </div>
         </div>
         <div id="meta-panel">
             <div class="meta-box">
-                <h2><span class="title-ico" data-ico="gem"></span>灵魂宝库 · 永久成长</h2>
+                <h2><span class="title-ico" data-ico="gem"></span>灵魂宝库</h2>
                 <div class="meta-shards" id="meta-shards-show">灵魂碎片：0</div>
                 <div class="meta-list" id="meta-list"></div>
                 <div class="meta-btns">
@@ -98,7 +98,7 @@
             </div>
         </div>
         <div id="levelup-panel">
-            <h2><span class="title-ico" data-ico="trending-up"></span>升级！选择一项能力</h2>
+            <h2><span class="title-ico" data-ico="trending-up"></span>升级！选择一项能力<span id="levelup-lock-hint" class="lv-lock-hint"></span></h2>
             <div class="cards" id="levelup-cards"></div>
             <div class="lv-btns">
                 <button class="skip-btn" id="skip-upgrade"><span class="btn-ico" data-ico="shuffle"></span>换一批</button>

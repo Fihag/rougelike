@@ -43,6 +43,11 @@
                     levelupCards.appendChild(card);
                 });
                 levelupPanel.style.display = 'flex';
+                // 点击保护：1.5 秒内不可选择，避免移动/误触
+                game.levelupLock = 1.5;
+                levelupPanel.classList.add('locked');
+                const lockHint = $inp('levelup-lock-hint');
+                if (lockHint) lockHint.textContent = '2 秒后可选择';
                 game.rerollUsed = false;
                 skipBtn.disabled = false;
                 skipBtn.style.opacity = '1';
@@ -78,6 +83,7 @@
 
             game.applyUpgrade = function(skill) {
                 if (game.state !== 'levelup') return;
+                if (game.levelupLock > 0) return; // 点击保护
                 const player = game.player;
                 player['_skill_' + skill.id] = (player['_skill_' + skill.id] || 0) + 1;
                 try { skill.apply(player); } catch(e) { console.warn('Skill apply error:', e); }
@@ -90,6 +96,7 @@
 
             skipBtn.addEventListener('click', () => {
                 if (game.state !== 'levelup') return;
+                if (game.levelupLock > 0) return; // 点击保护
                 if (game.rerollUsed) return;
                 const player = game.player;
                 game.rerollUsed = true;
@@ -111,6 +118,11 @@
                     card.addEventListener('touchend', (e) => { e.stopPropagation(); e.preventDefault(); game.applyUpgrade(skill); });
                     levelupCards.appendChild(card);
                 });
+                // 换一批后同样进入短保护
+                game.levelupLock = 1.5;
+                levelupPanel.classList.add('locked');
+                const lockHint = $inp('levelup-lock-hint');
+                if (lockHint) lockHint.textContent = '2 秒后可选择';
                 skipBtn.disabled = true;
                 skipBtn.style.opacity = '0.4';
                 skipBtn.style.cursor = 'not-allowed';
@@ -118,6 +130,7 @@
 
             skipXpBtn.addEventListener('click', () => {
                 if (game.state !== 'levelup') return;
+                if (game.levelupLock > 0) return; // 点击保护
                 const player = game.player;
                 const xpGain = Math.floor(player.xpToNext * 0.5);
                 levelupPanel.style.display = 'none';
@@ -141,13 +154,13 @@
                 game.player.pickupRangeMultiplier = (game.player.pickupRangeMultiplier || 1) + 0.20 * metaLevel('pickup');
                 game.player.expMultiplier = (game.player.expMultiplier || 1) + 0.15 * metaLevel('xp');
                 if (metaLevel('revive') > 0) { game.player.reviveLeft = 1; }
-                // 圣物（永久生效）
-                game.player.relicVamp = hasRelic('relic_vamp');
-                game.player.relicThorn = hasRelic('relic_thorn');
-                game.player.relicGreed = hasRelic('relic_greed');
-                game.player.relicBomb = hasRelic('relic_bomb');
-                // 开局护盾圣物（可升级）：采用灵魂护盾机制，护盾量/恢复时间随等级成长
-                const shieldLv = hasRelic('relic_shield_start') ? relicLevel('relic_shield_start') : 0;
+                // 圣物（仅穿戴的生效）
+                game.player.relicVamp = isRelicActive('relic_vamp');
+                game.player.relicThorn = isRelicActive('relic_thorn');
+                game.player.relicGreed = isRelicActive('relic_greed');
+                game.player.relicBomb = isRelicActive('relic_bomb');
+                // 开局护盾圣物（可升级，仅穿戴生效）：采用灵魂护盾机制，护盾量/恢复时间随等级成长
+                const shieldLv = isRelicActive('relic_shield_start') ? relicLevel('relic_shield_start') : 0;
                 if (shieldLv > 0) {
                     game.player.soulShield = true;
                     game.player.soulShieldLevel = shieldLv;
@@ -179,6 +192,7 @@
                 game.shadowTrails = [];
                 game.noBossDrop = false;
                 game.rings = []; game.levelFlash = 0; game.flashWhite = 0;
+                game.bossWarnTimer = 0; game.superBossDelay = 0; game.levelupLock = 0; game.pendingSuperBoss = false;
                 game.deathMark.targets = [];
                 if (typeof syncDeathMarkUI === 'function') syncDeathMarkUI();
                 dbg.pauseGame = false;
@@ -358,9 +372,11 @@
                             const st = w.spiritStates[s];
                             if (st.target && (!st.target.alive || st.target.deathMarked)) { st.target = null; st.lockTimer = 0; st.attackTimer = 0; }
                             if (revengeTarget) {
-                                if (st.target !== revengeTarget) { st.target = revengeTarget; st.lockTimer = 0; st.attackTimer = 0; }
-                                continue;
-                            }
+                            if (st.target !== revengeTarget) { st.target = revengeTarget; st.lockTimer = 0; st.attackTimer = 0; }
+                            // 复仇特性：受击后精灵零秒锁定，直接进入攻击状态
+                            st.lockTimer = Math.max(0.1, 1.0 - (w.lockReduction || 0));
+                            continue;
+                        }
                             if (st.target) continue;
                             let best = null, bestD = Infinity;
                             // 敌人不足时允许全部精灵堆叠同一目标（集中火力）；敌人充足时分散（每目标1只）

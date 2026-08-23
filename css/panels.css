@@ -319,7 +319,25 @@
 .pause-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #a86a10; }
 .pause-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #a86a10; }
 
-/* ===== 触屏模式：加大触击区域 ===== */
+/* ===== 升级点击保护（1.5 秒防误触） ===== */
+        #levelup-panel.locked { pointer-events: none; }
+        #levelup-panel.locked .cards { opacity: 0.55; }
+        .lv-lock-hint {
+            display: inline-block; margin-left: 8px; font-size: 0.62em; font-weight: normal;
+            background: var(--orange); color: #fff; border-radius: 12px; padding: 3px 10px;
+            vertical-align: middle; letter-spacing: 0.02em;
+        }
+
+        /* ===== 圣物穿戴/卸下切换 ===== */
+        .meta-item .meta-toggle {
+            flex: 0 0 auto; padding: 8px 14px; border-radius: 14px; font-size: 12px; font-weight: bold;
+            border: 2px solid var(--line); background: var(--cream-2); color: var(--brown-soft);
+            cursor: pointer; transition: all 0.15s;
+        }
+        .meta-item .meta-toggle:hover { border-color: var(--orange-deep); color: var(--orange-deep); }
+        .meta-item.relic-off { opacity: 0.72; }
+
+        /* ===== 触屏模式：加大触击区域 ===== */
 .touch-mode #ui-buttons button { width: 46px; height: 46px; font-size: 20px; }
 .touch-mode #ui-buttons button svg { width: 24px; height: 24px; }
 .touch-mode .pause-btn { padding: 12px 26px; font-size: 16px; }

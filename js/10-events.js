@@ -68,19 +68,31 @@
                 const roll = randInt(0, 3);
                 if (roll === 0) {
                     p.hp = p.maxHp;
-                    game.warningText = '宝箱：生命全满！';
+                    p.maxHp += 20;
+                    p.hp = p.maxHp;
+                    game.warningText = '宝箱：生命全满并提升上限！';
                     spawnParticles(p.x, p.y, 25, '#55ff88', 90, 0.6, 5);
                 } else if (roll === 1) {
-                    p.oneShotShield = true;
-                    game.warningText = '宝箱：获得一次性护盾！';
+                    // 宝箱灵魂护盾：40 点护盾量，15 秒自动恢复；已有护盾则叠加
+                    if (!p.soulShield) {
+                        p.soulShield = true;
+                        p.soulShieldMax = 40;
+                        p.soulShieldRegenTime = 15;
+                        p.soulShieldAmount = 40;
+                    } else {
+                        p.soulShieldMax = (p.soulShieldMax || 40) + 40;
+                        p.soulShieldAmount = Math.min(p.soulShieldMax, (p.soulShieldAmount || 0) + 40);
+                        if (!p.soulShieldRegenTime) p.soulShieldRegenTime = 15;
+                    }
+                    game.warningText = '宝箱：获得灵魂护盾（40点）！';
                     spawnParticles(p.x, p.y, 25, '#88ccff', 90, 0.6, 5);
                 } else if (roll === 2) {
-                    p.burstTimer = 5;
-                    game.warningText = '宝箱：攻速/移速爆发（5秒）！';
+                    p.burstTimer = 8;
+                    game.warningText = '宝箱：攻速/移速爆发（8秒）！';
                     spawnParticles(p.x, p.y, 25, '#ffaa00', 90, 0.6, 5);
                 } else {
-                    p.addXp(p.xpToNext * 0.5);
-                    game.warningText = '宝箱：经验书！（+半管经验）';
+                    p.addXp(p.xpToNext);
+                    game.warningText = '宝箱：经验书！（+一管经验）';
                     spawnParticles(p.x, p.y, 25, '#ffd700', 90, 0.6, 5);
                 }
                 game.warningTimer = 1.8;
@@ -120,14 +132,17 @@
                     spawnParticles(p.x, p.y, 30, '#ff2222', 120, 0.6, 5);
                     sound.play('playerHit');
                 } else {
-                    // 传送门：传送到地图另一侧，留下减速敌人的区域
+                    // 传送门：传送到地图另一侧，原地留下更大减速区域，并获得短暂爆发与无敌
                     const oldX = p.x, oldY = p.y;
                     p.x = clamp(W - p.x, p.size, W - p.size);
                     p.y = clamp(H - p.y, p.size, H - p.size);
-                    game.fireZones.push({ x: oldX, y: oldY, radius: 80, damage: 0, remaining: 5, tickRate: 0.5, tickTimer: 0, isSlowZone: true });
-                    game.warningText = '传送门：已传送至另一侧，留下减速区域！';
+                    game.fireZones.push({ x: oldX, y: oldY, radius: 120, damage: 0, remaining: 8, tickRate: 0.5, tickTimer: 0, isSlowZone: true });
+                    p.burstTimer = Math.max(p.burstTimer || 0, 6);
+                    p.invincibleTimer = Math.max(p.invincibleTimer || 0, 2);
+                    game.warningText = '传送门：已传送至另一侧！留减速区并获得爆发增益';
                     spawnParticles(oldX, oldY, 25, '#88aaff', 130, 0.6, 5);
                     spawnParticles(p.x, p.y, 25, '#88aaff', 130, 0.6, 5);
+                    spawnFx(p.x, p.y, 12, '#ffffff', { shape: 'star', glow: true, speed: 120, life: 0.6, size: 5 });
                     triggerShake(5, 0.25);
                 }
                 game.warningTimer = 1.8;

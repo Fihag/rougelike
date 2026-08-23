@@ -198,10 +198,16 @@
                     game.experienceOrbs = game.experienceOrbs.filter(o => !o.collected && o.life > 0);
                     for (const orb of game.experienceOrbs) orb.life -= cappedDt;
                     game.spawnTimer -= cappedDt;
-                    // ===== 精英波次驱动 =====
+                    // ===== 精英波次驱动（Boss 在场或预警期间不启动，延后重试） =====
                     if (game.waveState === 'idle') {
                         game.waveTimer -= cappedDt;
-                        if (game.waveTimer <= 0) startEliteWave();
+                        if (game.waveTimer <= 0) {
+                            if (game.bossOnField || game.bossWarnTimer > 0) {
+                                game.waveTimer = 3;
+                            } else {
+                                startEliteWave();
+                            }
+                        }
                     } else if (game.waveState === 'warning') {
                         game.waveTimer -= cappedDt;
                         game.waveNoticeTimer -= cappedDt;
@@ -279,13 +285,44 @@
                         game.achCheckTimer = 0.5;
                         checkAchievements();
                     }
-                    if (!game.bossOnField && !dbg.pauseSpawn) {
-                        // 超级Boss：击杀 3 个 Boss 或存活 10 分钟后召唤
-                        if (!game.superBossSpawned && (game.bossKilledCount >= 3 || game.time >= 600)) {
-                            spawnSuperBoss();
+                    // ===== Boss 生成（含 5 秒预警；与精英波次互斥） =====
+                    if (game.superBossDelay > 0) game.superBossDelay -= cappedDt;
+                    if (game.bossWarnTimer > 0) {
+                        game.bossWarnTimer -= cappedDt;
+                        if (game.bossWarnTimer <= 0) {
+                            game.bossWarnTimer = 0;
+                            if (game.waveState === 'idle') {
+                                if (game.pendingSuperBoss) spawnSuperBoss();
+                                else spawnBoss();
+                                game.pendingSuperBoss = false;
+                                game.bossTimer = (DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal).bossRespawn;
+                            }
+                        }
+                    }
+                    if (!game.bossOnField && !dbg.pauseSpawn && game.bossWarnTimer <= 0) {
+                        // 超级Boss：击杀 3 个 Boss 或存活 10 分钟后召唤（死亡后延迟 20 秒才可触发）
+                        if (!game.superBossSpawned && game.superBossDelay <= 0 && (game.bossKilledCount >= 3 || game.time >= 600)) {
+                            if (game.waveState === 'idle') {
+                                game.pendingSuperBoss = true;
+                                game.bossWarnTimer = 5;
+                                game.warningText = '强敌即将降临！';
+                                game.warningTimer = 2.0;
+                                sound.play('bossWarn');
+                            }
                         } else {
                             game.bossTimer -= cappedDt;
-                            if (game.bossTimer <= 0) { spawnBoss(); game.bossTimer = (DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal).bossRespawn; }
+                            if (game.bossTimer <= 0) {
+                                if (game.waveState !== 'idle') {
+                                    // 精英波次期间不生成 Boss，延后重试
+                                    game.bossTimer = 5;
+                                } else {
+                                    game.pendingSuperBoss = false;
+                                    game.bossWarnTimer = 5;
+                                    game.warningText = 'Boss 即将来袭！';
+                                    game.warningTimer = 2.0;
+                                    sound.play('bossWarn');
+                                }
+                            }
                         }
                     }
                     if (game.warningTimer > 0) game.warningTimer -= cappedDt;
@@ -315,6 +352,19 @@
                     if (screenShake.elapsed < screenShake.duration) screenShake.elapsed += cappedDt;
                     game.time += cappedDt;
                 } else if (game.state === 'levelup' || game.state === 'bossdrop') {
+                    // 升级点击保护倒计时（1.5 秒内防误触）
+                    if (game.levelupLock > 0) {
+                        game.levelupLock -= cappedDt;
+                        if (game.levelupLock <= 0) {
+                            game.levelupLock = 0;
+                            levelupPanel.classList.remove('locked');
+                            const lockHint = $inp('levelup-lock-hint');
+                            if (lockHint) lockHint.textContent = '';
+                        } else {
+                            const lockHint = $inp('levelup-lock-hint');
+                            if (lockHint) lockHint.textContent = Math.ceil(game.levelupLock) + ' 秒后可选择';
+                        }
+                    }
                     for (const p of particles) p.update(cappedDt); particles = particles.filter(p => p.alive);
                     for (const dn of damageNumbers) dn.update(cappedDt); damageNumbers = damageNumbers.filter(dn => dn.alive);
                     for (const dt2 of deathTexts) dt2.update(cappedDt); deathTexts = deathTexts.filter(dt2 => dt2.alive);
@@ -526,9 +576,9 @@
                 }
                 if (game.time < 4 && game.state === 'playing') {
                     if (useTouchControl) {
-                        hudHint.textContent = game.deathMark.enabled && game.deathMark.mode === 'manual' ? '屏幕任意位置拖动移动 · 点击敌人标记' : '屏幕任意位置拖动移动';
+                        hudHint.textContent = game.deathMark.enabled && game.deathMark.mode === 'manual' ? '按住任意位置拖动控制 · 点击敌人标记' : '按住任意位置拖动控制';
                     } else {
-                        hudHint.textContent = 'WASD 移动 · 自动攻击 · 击杀升级';
+                        hudHint.textContent = '键鼠 / 触屏均可操作';
                     }
                     hudHint.style.display = 'block';
                 } else if (hudHint.style.display !== 'none') {
@@ -627,17 +677,19 @@
                 sep.style.cssText = 'font-weight:bold;color:var(--orange-deep);font-size:14px;margin:8px 0 2px;letter-spacing:0.05em;';
                 sep.textContent = '—— 圣物商店 ——';
                 metaList.appendChild(sep);
-                // 圣物（永久生效；带 maxLevel 的可升级）
+                // 圣物（带 maxLevel 的可升级；可自由穿戴/卸下，卸下后效果不生效）
                 for (const r of META_RELICS) {
                     const lv = relicLevel(r.id);
                     const maxLv = r.maxLevel || 1;
+                    const active = isRelicActive(r.id);
                     const item = document.createElement('div');
                     item.className = 'meta-item';
+                    item.classList.toggle('relic-off', lv > 0 && !active);
                     const info = document.createElement('div');
                     info.className = 'mi-info';
                     const name = document.createElement('div');
                     name.className = 'mi-name';
-                    name.innerHTML = `${ICONS[r.icon] || ''} ${r.name}` + (maxLv > 1 && lv > 0 ? ` <span class="mi-lv">Lv.${lv}/${maxLv}</span>` : '');
+                    name.innerHTML = `${ICONS[r.icon] || ''} ${r.name}` + (maxLv > 1 && lv > 0 ? ` <span class="mi-lv">Lv.${lv}/${maxLv}</span>` : '') + (lv > 0 && !active ? ' <span class="mi-lv" style="background:#999;">未穿戴</span>' : '');
                     const desc = document.createElement('div');
                     desc.className = 'mi-desc';
                     desc.textContent = typeof r.desc === 'function' ? r.desc(Math.max(1, lv)) : r.desc;
@@ -664,6 +716,18 @@
                         });
                     }
                     item.appendChild(btn);
+                    // 穿戴/卸下切换（仅已拥有圣物）
+                    if (lv > 0) {
+                        const tog = document.createElement('button');
+                        tog.className = 'meta-toggle';
+                        tog.textContent = active ? '卸下' : '穿戴';
+                        tog.addEventListener('click', () => {
+                            setRelicActive(r.id, !active);
+                            renderMetaPanel();
+                            syncDeathMarkUI();
+                        });
+                        item.appendChild(tog);
+                    }
                     metaList.appendChild(item);
                 }
             }
@@ -764,9 +828,9 @@
                 game.warningText = '死神之指：' + (game.deathMark.mode === 'auto' ? '自动' : '手动') + '模式';
                 game.warningTimer = 1.0;
             });
-            // ===== 死神之指 UI 同步：正式版需购买解锁；Debug 版尊重调试面板开关 =====
+            // ===== 死神之指 UI 同步：正式版需购买并穿戴解锁；Debug 版尊重调试面板开关 =====
             function syncDeathMarkUI() {
-                const unlocked = hasRelic('relic_deathmark');
+                const unlocked = isRelicActive('relic_deathmark');
                 let on = unlocked;
                 const dbgDM = $inp('dbg-deathmark');
                 if (typeof dbgInit === 'function' && dbgDM) on = dbgDM.checked;

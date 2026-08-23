@@ -165,9 +165,9 @@
                     this.hp -= amount;
                     this.flashTimer = 0.08;
                     game.totalDamageDealt += amount;
-                    // 吸血之爪：造成伤害的 5% 回复生命
+                    // 吸血之爪：造成伤害的 10% 回复生命
                     if (game.player && game.player.relicVamp && amount > 0 && this.alive) {
-                        const heal = Math.max(1, Math.floor(amount * 0.05));
+                        const heal = Math.max(1, Math.floor(amount * 0.10));
                         if (game.player.hp < game.player.maxHp) {
                             game.player.hp = Math.min(game.player.maxHp, game.player.hp + heal);
                             spawnParticles(game.player.x, game.player.y, 3, '#ff5577', 40, 0.3, 2);
@@ -216,6 +216,10 @@
                             game.player.hp = Math.min(game.player.maxHp, game.player.hp + game.player.maxHp * 0.3);
                             spawnParticles(game.player.x, game.player.y, 20, '#ffd700', 80, 0.6, 6);
                             game.bossOnField = false;
+                            // 重置生成计时：避免 Boss 死亡瞬间（bossTimer 已走完）立刻再刷下一只
+                            game.bossTimer = (DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal).bossRespawn;
+                            // 暗黑镜像延迟 20 秒后才可召唤，避免 Boss 死亡后立即刷出（曾表现为"刺客重新刷新"）
+                            game.superBossDelay = 20;
                             // 母皇死亡：巢穴崩塌，清除其幼体
                             if (this.typeKey === 'broodmother') {
                                 for (const e of game.enemies) if (e.bossMinion === this) e.alive = false;
@@ -399,13 +403,15 @@
                                 if (this.teleportTimer <= 0) {
                                     this.teleporting = true;
                                     this.teleportProgress = 0;
+                                    // 预计算降落方位（闪现期间在落点显示警示标记）
+                                    this.computeTeleportTarget(player);
                                 }
                             } else {
                                 this.teleportProgress += dt;
                                 if (this.teleportProgress >= this.chargeTime) {
                                     this.doTeleport(player);
                                     this.teleporting = false;
-                                    this.teleportTimer = [4, 2.5, 1.5][enraged];
+                                    this.teleportTimer = [6, 4.5, 3.5][enraged];
                                 }
                             }
                             // 影刃回旋：朝玩家方向环形飞刀（狂暴时更快）
@@ -545,12 +551,19 @@
                     spawnParticles(this.x, this.y, 10, '#8a4bd8', 60, 0.4, 3);
                 }
 
-                doTeleport(player) {
-                    // 瞬影突进：闪现到玩家侧后方，起点留残影（减速区域 + 一次30%剑气），落地扇形三连
+                computeTeleportTarget(player) {
+                    // 预计算闪现降落位置：玩家侧后方更远处（180px）
                     const angle = Math.atan2(player.y - this.y, player.x - this.x);
                     const side = Math.random() < 0.5 ? Math.PI / 2 : -Math.PI / 2;
-                    const tx = clamp(player.x + Math.cos(angle + Math.PI + side) * 120, 40, W - 40);
-                    const ty = clamp(player.y + Math.sin(angle + Math.PI + side) * 120, 40, H - 40);
+                    this.teleportTX = clamp(player.x + Math.cos(angle + Math.PI + side) * 180, 40, W - 40);
+                    this.teleportTY = clamp(player.y + Math.sin(angle + Math.PI + side) * 180, 40, H - 40);
+                }
+
+                doTeleport(player) {
+                    // 瞬影突进：闪现到玩家侧后方，起点留残影（减速区域 + 一次30%剑气），落地扇形三连
+                    if (this.teleportTX === undefined || this.teleportTY === undefined) this.computeTeleportTarget(player);
+                    const tx = this.teleportTX, ty = this.teleportTY;
+                    this.teleportTX = undefined; this.teleportTY = undefined;
                     // 起点残影
                     game.shadowZones.push({ x: this.x, y: this.y, remaining: 1.5, echoTimer: 0.3, echoFired: false, echoDamage: Math.floor(this.slashDamage * 0.3), echoSpeed: this.slashSpeed });
                     spawnParticles(this.x, this.y, 24, '#b06aff', 90, 0.5, 4);
@@ -658,6 +671,23 @@
                         const pulse = 0.6 + Math.sin(game.time * 20) * 0.4;
                         ctx.strokeStyle = `rgba(176,106,255,${0.5 + progress * 0.5})`; ctx.lineWidth = 3;
                         ctx.beginPath(); ctx.arc(this.x, this.y, this.size + 12 + pulse * 2, 0, Math.PI * 2); ctx.stroke();
+                        // 降落方位警示标记（落点圈 + 朝下箭头 + 外扩环）
+                        if (this.teleportTX !== undefined && this.teleportTY !== undefined) {
+                            const tx = this.teleportTX, ty = this.teleportTY;
+                            const pp = 0.5 + Math.sin(game.time * 16) * 0.3;
+                            ctx.strokeStyle = `rgba(255,70,255,${0.30 + progress * 0.5})`;
+                            ctx.lineWidth = 2 + progress * 1.5;
+                            ctx.setLineDash([5, 5]);
+                            ctx.beginPath(); ctx.arc(tx, ty, 20, 0, Math.PI * 2); ctx.stroke();
+                            ctx.setLineDash([]);
+                            ctx.fillStyle = `rgba(255,120,255,${0.6 + pp * 0.4})`;
+                            ctx.beginPath(); ctx.moveTo(tx, ty - 10); ctx.lineTo(tx + 9, ty + 6); ctx.lineTo(tx - 9, ty + 6); ctx.closePath(); ctx.fill();
+                            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                            ctx.beginPath(); ctx.arc(tx, ty, 2.5, 0, Math.PI * 2); ctx.fill();
+                            ctx.strokeStyle = `rgba(255,120,255,${0.25 * (1 - progress)})`;
+                            ctx.lineWidth = 3;
+                            ctx.beginPath(); ctx.arc(tx, ty, 24 + progress * 10, 0, Math.PI * 2); ctx.stroke();
+                        }
                     }
                     if (this.isBoss && this.charging) {
                         const progress = this.chargeProgress / this.chargeTime;

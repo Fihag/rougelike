@@ -1,16 +1,16 @@
             // ==================== 技能注册表 ====================
             const MAX_LEVEL = 100;
             const DIFFICULTIES = {
-                easy:   { name: '简单', diffStart: 1, mult: 0.8, bossTimer: 120, spawnInterval: 1.6, spawnStep: 0.03, spawnMin: 0.40, bossRespawn: 85, playerHp: 150, shardMult: 0.6 },
+                easy:   { name: '简单', diffStart: 1, mult: 0.8, bossTimer: 120, spawnInterval: 1.6, spawnStep: 0.03, spawnMin: 0.40, bossRespawn: 85, playerHp: 150, shardMult: 0.7 },
                 normal: { name: '普通', diffStart: 1, mult: 1, bossTimer: 90, spawnInterval: 1.3, spawnStep: 0.04, spawnMin: 0.30, bossRespawn: 70, playerHp: 100, shardMult: 1 },
-                hard:   { name: '困难', diffStart: 3, mult: 1.15, bossTimer: 75, spawnInterval: 1.2, spawnStep: 0.045, spawnMin: 0.28, bossRespawn: 65, playerHp: 90, shardMult: 1.3 },
-                hell:   { name: '地狱', diffStart: 5, mult: 1.30, bossTimer: 60, spawnInterval: 1.1, spawnStep: 0.06, spawnMin: 0.25, bossRespawn: 55, playerHp: 85, shardMult: 1.7 }
+                hard:   { name: '困难', diffStart: 3, mult: 1.15, bossTimer: 75, spawnInterval: 1.2, spawnStep: 0.045, spawnMin: 0.28, bossRespawn: 65, playerHp: 90, shardMult: 1.5 },
+                hell:   { name: '地狱', diffStart: 5, mult: 1.30, bossTimer: 60, spawnInterval: 1.1, spawnStep: 0.06, spawnMin: 0.25, bossRespawn: 55, playerHp: 85, shardMult: 1.8 }
             };
             const START_WEAPON_DEFS = {
                 magic_missile:   () => ({ type: 'magic_missile', level: 1, cooldown: 0, cooldownTime: 0.85, cooldownMultiplier: 1, damage: 21, damageMultiplier: 1, projectileSpeed: 350, extraProjectiles: 0, splashRadius: 28, splashDamagePercent: 0.35 }),
                 orbit_blade:     () => ({ type: 'orbit_blade', level: 1, bladeCount: 3, radius: 60, rotationSpeed: 3.0, damage: 26, damageMultiplier: 1, angle: 0, hitCooldowns: new Map(), hitCdTime: 0.28 }),
                 frost_nova:      () => ({ type: 'frost_nova', level: 1, cooldown: 0, cooldownTime: 2.2, radius: 130, damage: 32, damageMultiplier: 1, slowAmount: 0.50, slowDuration: 2.2 }),
-                lightning_chain: () => ({ type: 'lightning_chain', level: 1, cooldown: 0, cooldownTime: 1.0, damage: 20, damageMultiplier: 1, bounceCount: 1, bounceRange: 120, damageFalloff: 0.3, hitCooldowns: new Map(), hitCdTime: 0.3 }),
+                lightning_chain: () => ({ type: 'lightning_chain', level: 1, cooldown: 0, cooldownTime: 0.95, damage: 20, damageMultiplier: 1, bounceCount: 1, bounceRange: 120, damageFalloff: 0.3, hitCooldowns: new Map(), hitCdTime: 0.25 }),
                 meteor:          () => ({ type: 'meteor', level: 1, cooldown: 0, cooldownTime: 5.0, damage: 110, damageMultiplier: 1, radius: 100, doubleChance: 0 }),
                 shadow_spirit:   () => ({ type: 'shadow_spirit', level: 1, spiritCount: 2, damage: 13, damageMultiplier: 1, attackSpeed: 1.3125, attackSpeedMultiplier: 1, slowChance: 0, slowAmount: 0.3, slowDuration: 1.5, attackTimer: 0, lockReduction: 0 })
             };
@@ -130,9 +130,9 @@
                     applies: (p) => !p.weapons.some(w => w.type === 'lightning_chain'),
                     apply: (p) => {
                         p.weapons.push({
-                            type: 'lightning_chain', level: 1, cooldown: 0, cooldownTime: 1.0,
+                            type: 'lightning_chain', level: 1, cooldown: 0, cooldownTime: 0.95,
                             damage: 20, damageMultiplier: 1, bounceCount: 1, bounceRange: 120,
-                            damageFalloff: 0.3, hitCooldowns: new Map(), hitCdTime: 0.3
+                            damageFalloff: 0.3, hitCooldowns: new Map(), hitCdTime: 0.25
                         });
                     }
                 },
@@ -232,14 +232,14 @@
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'magic_missile'); if (w) { w.evolved = 'fireball'; w.damageMultiplier = (w.damageMultiplier || 1) * 1.4; w.projectileSpeed *= 1.30; w.splashRadius = (w.splashRadius || 30) * 1.3; } }
                 },
                 {
-                    id: 'evo_orbit', name: '剑刃风暴', icon: 'swords', desc: '飞刃+5，转速+50%', maxLevel: 1, color: '#44aaff',
+                    id: 'evo_orbit', name: '剑刃风暴', icon: 'swords', desc: '飞刃+5，转速+50%，命中间隔大幅缩短', maxLevel: 1, color: '#44aaff',
                     applies: (p) => { const w = p.weapons.find(w => w.type === 'orbit_blade'); return w && (p['_skill_orbit_count'] || 0) >= 4 && (p['_skill_orbit_damage'] || 0) >= 4 && (p['_skill_orbit_speed'] || 0) >= 3 && !p['_skill_evo_orbit']; },
-                    apply: (p) => { const w = p.weapons.find(w => w.type === 'orbit_blade'); if (w) { w.evolved = 'blade_storm'; w.bladeCount += 5; w.radius = 70; w.rotationSpeed *= 1.5; } }
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'orbit_blade'); if (w) { w.evolved = 'blade_storm'; w.bladeCount += 5; w.radius = 70; w.rotationSpeed *= 1.5; w.hitCdTime = Math.max(0.1, (w.hitCdTime || 0.28) - 0.18); } }
                 },
                 {
-                    id: 'evo_frost', name: '极寒领域', icon: 'snowflake', desc: '范围+30%，减速70%，冻结', maxLevel: 1, color: '#00ccff',
+                    id: 'evo_frost', name: '极寒领域', icon: 'snowflake', desc: '范围+30%，减速70%，冻结0.8秒', maxLevel: 1, color: '#00ccff',
                     applies: (p) => { const w = p.weapons.find(w => w.type === 'frost_nova'); return w && (p['_skill_frost_range'] || 0) >= 4 && (p['_skill_frost_damage'] || 0) >= 3 && !p['_skill_evo_frost']; },
-                    apply: (p) => { const w = p.weapons.find(w => w.type === 'frost_nova'); if (w) { w.evolved = 'frozen_domain'; w.radius *= 1.3; w.slowAmount = 0.7; w.freezeDuration = 0.6; } }
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'frost_nova'); if (w) { w.evolved = 'frozen_domain'; w.radius *= 1.3; w.slowAmount = 0.7; w.freezeDuration = 0.8; } }
                 },
                 {
                     id: 'evo_chain', name: '雷暴', icon: 'cloud-lightning', desc: '弹跳+2，伤害+30%，冷却-30%，可重复命中', maxLevel: 1, color: '#ffff00',
@@ -247,9 +247,9 @@
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'lightning_chain'); if (w) { w.evolved = 'thunderstorm'; w.bounceCount += 2; w.damageFalloff = 0; w.cooldownTime *= 0.7; w.damageMultiplier = (w.damageMultiplier || 1) + 0.30; w.allowRehit = true; } }
                 },
                 {
-                    id: 'evo_meteor', name: '星落', icon: 'stars', desc: '冷却3秒，伤害+40%，留燃烧区', maxLevel: 1, color: '#ff6600',
+                    id: 'evo_meteor', name: '星落', icon: 'stars', desc: '冷却2.5秒，伤害+40%，留燃烧区', maxLevel: 1, color: '#ff6600',
                     applies: (p) => { const w = p.weapons.find(w => w.type === 'meteor'); return w && (p['_skill_meteor_cd'] || 0) >= 2 && (p['_skill_meteor_range'] || 0) >= 3 && (p['_skill_meteor_damage'] || 0) >= 3 && !p['_skill_evo_meteor']; },
-                    apply: (p) => { const w = p.weapons.find(w => w.type === 'meteor'); if (w) { w.evolved = 'starfall'; w.cooldownTime = 3; w.damageMultiplier = (w.damageMultiplier || 1) + 0.40; w.leaveBurning = true; w.burningDuration = 2; w.burningTickRate = 0.4; w.burningDamagePercent = 0.30; } }
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'meteor'); if (w) { w.evolved = 'starfall'; w.cooldownTime = 2.5; w.damageMultiplier = (w.damageMultiplier || 1) + 0.40; w.leaveBurning = true; w.burningDuration = 2; w.burningTickRate = 0.4; w.burningDamagePercent = 0.30; } }
                 },
                 {
                     id: 'evo_shadow', name: '暗影军团', icon: 'users', desc: '精灵+1，攻速+30%', maxLevel: 1, color: '#6600cc',
@@ -275,9 +275,9 @@
                 },
                 // ===== 风险回报类 =====
                 {
-                    id: 'glass_cannon', name: '玻璃大炮', icon: 'target', desc: '伤害+35%，受击+25%', maxLevel: 1, color: '#ff4444',
+                    id: 'glass_cannon', name: '玻璃大炮', icon: 'target', desc: '伤害+40%，受击+25%', maxLevel: 1, color: '#ff4444',
                     applies: () => true,
-                    apply: (p) => { p.globalDamageMultiplier = (p.globalDamageMultiplier || 1) + 0.35; p.damageTakenMultiplier = (p.damageTakenMultiplier || 1) + 0.25; }
+                    apply: (p) => { p.globalDamageMultiplier = (p.globalDamageMultiplier || 1) + 0.40; p.damageTakenMultiplier = (p.damageTakenMultiplier || 1) + 0.25; }
                 },
                 {
                     id: 'turtle_tactics', name: '龟壳战术', icon: 'shield-half', desc: '减伤+8%，移速-15%', maxLevel: 1, color: '#88aa88',

@@ -144,6 +144,7 @@ const $inp = (id) => document.getElementById(id);
                 time: 0, score: 0, kills: 0, totalDamageDealt: 0, spawnTimer: 0, spawnInterval: 1.3,
                 difficultyLevel: 1, currentChoices: null, waveNoteShown: {}, upgradeCount: 0,
                 bossTimer: 90, bossAppearedCount: 0, bossOnField: false,
+                bossWarnTimer: 0, superBossDelay: 0, levelupLock: 0, pendingSuperBoss: false,
                 warningText: '', warningTimer: 0,
                 fireZones: [], // 炎术士死亡火焰区域
                                 chainLightningVisuals: [], // 闪电链视觉效果
