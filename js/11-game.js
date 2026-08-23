@@ -137,12 +137,20 @@
                             if (game.chainLightningVisuals[i].life <= 0) game.chainLightningVisuals.splice(i, 1);
                         }
                     }
-                    // 熔岩喷发预警圈：倒计时结束后爆燃成火区并造成一次触伤
+                    // 熔岩喷发预警圈：倒计时内持续向玩家漂移追踪，结束后爆燃成火区并造成一次触伤
                     if (game.lavaWarns && game.lavaWarns.length) {
                         for (let i = game.lavaWarns.length - 1; i >= 0; i--) {
                             const w = game.lavaWarns[i];
                             w.t -= cappedDt;
-                            if (w.t > 0) continue;
+                            if (w.t > 0) {
+                                // 追踪：以 120px/s 向玩家当前位置漂移
+                                const dx = player.x - w.x, dy = player.y - w.y, d = Math.hypot(dx, dy) || 1;
+                                if (d > w.r * 0.5) {
+                                    w.x = clamp(w.x + dx / d * 120 * cappedDt, 30, WORLD_W - 30);
+                                    w.y = clamp(w.y + dy / d * 120 * cappedDt, 30, WORLD_H - 30);
+                                }
+                                continue;
+                            }
                             game.lavaWarns.splice(i, 1);
                             game.fireZones.push({ x: w.x, y: w.y, radius: w.r * 0.92, damage: w.poolDmg, remaining: 2.6, tickRate: 0.5, tickTimer: 0, rgb: '255,120,40' });
                             if (dist(player, w) < w.r + player.size) player.takeDamage(w.dmg);

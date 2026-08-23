@@ -9,7 +9,7 @@
                 hatchling:  { name: '巢穴幼体', hp: 25, speed: 135, size: 8, color: '#a8e063', xpValue: 12, damage: 9, shape: 'circle' },
                 broodmother: { name: '虫巢母皇', hp: 2300, speed: 42, size: 30, color: '#7cbf4d', xpValue: 200, damage: 30, shape: 'circle', isBoss: true, shieldBase: 850, slashDamage: 0, slashSpeed: 0, slashCooldown: 6, chargeTime: 0.9, summonType: 'hatchling', summonInterval: 3.5, summonCount: 3, auraColor: 'rgba(120,200,80,0.6)', scale: { hpRate: 0.30, shieldRate: 0.25, shieldRate3: 0.30, contactRate: 0.06, acidRate: 0.20, speedRate: 0.40, speedCap: 3 } },
                 assassin:  { name: '暗影刺客', hp: 1300, speed: 135, size: 20, color: '#5a2a7a', xpValue: 200, damage: 30, shape: 'triangle', isBoss: true, shieldBase: 1050, slashDamage: 30, slashSpeed: 290, slashCooldown: 3.5, chargeTime: 0.9, shurikenDamage: 20, shurikenSpeed: 270, shurikenCount: 6, shurikenInterval: 7, auraColor: 'rgba(120,60,190,0.6)', scale: { hpRate: 0.20, shieldRate: 0.25, slashRate: 0.25, speedRate: 0.35, speedCap: 3 } },
-                lavabeast: { name: '熔岩巨兽', hp: 2800, speed: 100, size: 34, color: '#8a2b08', xpValue: 240, damage: 34, shape: 'circle', isBoss: true, shieldBase: 1300, slashDamage: 26, slashSpeed: 240, slashCooldown: 5.5, chargeTime: 0.9, summonType: 'lavaling', summonInterval: 10, summonCount: 2, auraColor: 'rgba(255,90,20,0.65)', scale: { hpRate: 0.32, shieldRate: 0.28, contactRate: 0.06, slashRate: 0.22, speedRate: 0.35, speedCap: 3 } },
+                lavabeast: { name: '熔岩巨兽', hp: 3000, speed: 115, size: 34, color: '#8a2b08', xpValue: 240, damage: 34, shape: 'circle', isBoss: true, shieldBase: 1300, slashDamage: 26, slashSpeed: 240, slashCooldown: 5.5, chargeTime: 0.9, summonType: 'lavaling', summonInterval: 8, summonCount: 3, auraColor: 'rgba(255,90,20,0.65)', scale: { hpRate: 0.32, shieldRate: 0.28, contactRate: 0.06, slashRate: 0.22, speedRate: 0.35, speedCap: 3 } },
                 lavaling:  { name: '熔岩幼体', hp: 18, speed: 95, size: 9, color: '#ff6622', xpValue: 10, damage: 6, shape: 'circle', isGhost: true, slowAmount: 0.35, slowDuration: 1.5, dotDamage: 2, dotDuration: 2 }
             };
 
@@ -95,7 +95,7 @@
                         } else if (this.typeKey === 'assassin') {
                             this.damageReduction = 0.35;
                         } else if (this.typeKey === 'lavabeast') {
-                            this.damageReduction = 0.25;
+                            this.damageReduction = 0.35;
                         } else {
                             this.damageReduction = 0;
                         }
@@ -143,18 +143,22 @@
                             this.lavaEruptInterval = 6.5;
                             this.lavaLeapTimer = 8;         // 震地跃击
                             this.lavaLeapInterval = 9;
-                            this.lavaHardenTimer = 11;      // 熔火硬化
-                            this.lavaHardenInterval = 11;
+                            this.lavaHardenTimer = 10;      // 熔火硬化
+                            this.lavaHardenInterval = 10;
+                            this.lavaAimTimer = 4.5;        // 瞄准弹幕
+                            this.lavaAimInterval = 4.5;
+                            this.lavaAimWave = 0;           // 瞄准弹幕剩余波次
+                            this.lavaAimWaveTimer = 0;      // 波间隔 0.15s
                             this.hardened = 0;              // 硬化剩余时间（石化停驻）
                             this.leaping = false;           // 滞空免伤中
                             this.leapWarnX = 0; this.leapWarnY = 0;
-                            this.enraged = false;           // 狂暴(<40%)
+                            this.enraged = false;           // 狂暴(<50%)
                             this.trailTimer = 0;            // 火焰足迹节流
                             this.dying = false;             // 两段式死亡演出中
                             this.deathTimer = 0; this.deathBurstTimer = 0;
                             this.lavaDmg = Math.floor(14 * grow(sc.slashRate));       // 弹幕单发
                             this.lavaPoolDmg = Math.floor(10 * grow(sc.slashRate));   // 火区每跳
-                            this.lavaEruptDmg = Math.floor(16 * grow(sc.slashRate));  // 喷发触伤
+                            this.lavaEruptDmg = Math.floor(20 * grow(sc.slashRate));  // 喷发触伤
                             this.lavaLeapDmg = Math.floor(22 * grow(sc.slashRate));   // 落地震伤
                         }
                     }
@@ -372,9 +376,14 @@
                             this.leaping = false;
                             this.x = clamp(this.leapWarnX, this.size, WORLD_W - this.size);
                             this.y = clamp(this.leapWarnY, this.size, WORLD_H - this.size);
-                            game.rings.push({ x: this.x, y: this.y, r: 14, maxR: 130, life: 0.45, maxLife: 0.45, color: '#ff7722', width: 6 });
-                            if (dist(this, player) < 95 + player.size) player.takeDamage(this.lavaLeapDmg);
+                            game.rings.push({ x: this.x, y: this.y, r: 14, maxR: 150, life: 0.45, maxLife: 0.45, color: '#ff7722', width: 6 });
+                            if (dist(this, player) < 120 + player.size) player.takeDamage(this.lavaLeapDmg);
                             if (game.fireZones.length < 40) game.fireZones.push({ x: this.x, y: this.y, radius: 46, damage: this.lavaPoolDmg, remaining: 2.5, tickRate: 0.5, tickTimer: 0, rgb: '255,120,40' });
+                            // 落地追加径向火弹（封堵逃离）
+                            for (let i = 0; i < 10; i++) {
+                                const ra = (Math.PI * 2 / 10) * i;
+                                game.projectiles.push(new Projectile(this.x, this.y, Math.cos(ra) * 230, Math.sin(ra) * 230, this.lavaDmg, 0, 0, '#ff9944', 6, true));
+                            }
                             triggerShake(7, 0.35);
                             sound.play('explosion');
                             spawnParticles(this.x, this.y, 24, '#ff6622', 140, 0.55, 5);
@@ -402,19 +411,19 @@
                         }
                         const hpRatio = this.hp / this.maxHp;
                         if (this.typeKey === 'lavabeast') {
-                            // 狂暴：<40% 血量，技能间隔×0.7，移动留火焰足迹
-                            if (!this.enraged && hpRatio < 0.4) {
+                            // 狂暴：<50% 血量，技能间隔×0.5，移动留火焰足迹
+                            if (!this.enraged && hpRatio < 0.5) {
                                 this.enraged = true;
                                 game.warningText = '熔岩巨兽进入狂暴！';
                                 game.warningTimer = 1.5;
                                 sound.play('bossWarn');
                                 triggerShake(6, 0.4);
                             }
-                            const rush = this.enraged ? 0.7 : 1;
+                            const rush = this.enraged ? 0.5 : 1;
                             if (this.enraged) {
                                 this.trailTimer -= dt;
                                 if (this.trailTimer <= 0) {
-                                    this.trailTimer = 0.55;
+                                    this.trailTimer = 0.4;
                                     if (game.fireZones.length < 40) game.fireZones.push({ x: this.x, y: this.y, radius: 34, damage: this.lavaPoolDmg, remaining: 2.2, tickRate: 0.5, tickTimer: 0, rgb: '255,120,40' });
                                 }
                             }
@@ -422,22 +431,42 @@
                             this.lavaBarrageTimer -= dt;
                             if (this.lavaBarrageTimer <= 0) {
                                 this.lavaBarrageTimer = this.lavaBarrageInterval * rush;
-                                const n = this.enraged ? 16 : 12;
+                                const n = this.enraged ? 24 : 20;
                                 for (let i = 0; i < n; i++) {
                                     const a = (Math.PI * 2 / n) * i + rand(0, 0.4);
-                                    game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * 200, Math.sin(a) * 200, this.lavaDmg, 0, 0, i % 2 ? '#ff7722' : '#ffaa33', 7, true));
+                                    game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * 260, Math.sin(a) * 260, this.lavaDmg, 0, 0, i % 2 ? '#ff7722' : '#ffaa33', 7, true));
                                 }
                                 spawnParticles(this.x, this.y, 18, '#ff8833', 120, 0.5, 5);
                                 sound.play('explosion');
                             }
-                            // 技能：熔岩喷发（玩家附近预警圈→爆燃火区+触伤）
+                            // 技能：瞄准弹幕（朝玩家扇形三波连发）
+                            this.lavaAimTimer -= dt;
+                            if (this.lavaAimTimer <= 0) {
+                                this.lavaAimTimer = this.lavaAimInterval * rush;
+                                this.lavaAimWave = 3;
+                                this.lavaAimWaveTimer = 0;
+                            }
+                            if (this.lavaAimWave > 0) {
+                                this.lavaAimWaveTimer -= dt;
+                                if (this.lavaAimWaveTimer <= 0) {
+                                    this.lavaAimWaveTimer = 0.15;
+                                    this.lavaAimWave--;
+                                    const baseA = Math.atan2(player.y - this.y, player.x - this.x);
+                                    const spread = 0.55;
+                                    for (let i = 0; i < 6; i++) {
+                                        const a = baseA - spread / 2 + (spread / 5) * i;
+                                        game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * 270, Math.sin(a) * 270, this.lavaDmg, 0, 0, '#ff9944', 6, true));
+                                    }
+                                }
+                            }
+                            // 技能：熔岩喷发（玩家附近预警圈→爆燃火区+触伤；预警圈向玩家漂移追踪）
                             this.lavaEruptTimer -= dt;
                             if (this.lavaEruptTimer <= 0) {
                                 this.lavaEruptTimer = this.lavaEruptInterval * rush;
-                                const warns = this.enraged ? 5 : 3;
+                                const warns = this.enraged ? 6 : 4;
                                 if (!game.lavaWarns) game.lavaWarns = [];
                                 for (let i = 0; i < warns; i++) {
-                                    game.lavaWarns.push({ x: clamp(player.x + rand(-110, 110), 30, WORLD_W - 30), y: clamp(player.y + rand(-110, 110), 30, WORLD_H - 30), r: 52, t: 0.9, max: 0.9, dmg: this.lavaEruptDmg, poolDmg: this.lavaPoolDmg });
+                                    game.lavaWarns.push({ x: clamp(player.x + rand(-70, 70), 30, WORLD_W - 30), y: clamp(player.y + rand(-70, 70), 30, WORLD_H - 30), r: 62, t: 0.7, max: 0.7, dmg: this.lavaEruptDmg, poolDmg: this.lavaPoolDmg });
                                 }
                                 sound.play('bossWarn');
                             }
@@ -446,7 +475,7 @@
                             if (this.lavaLeapTimer <= 0 && !this.leaping) {
                                 this.lavaLeapTimer = this.lavaLeapInterval * rush;
                                 this.leaping = true;
-                                this.leapT = 0.75;
+                                this.leapT = 0.55;
                                 this.leapWarnX = player.x; this.leapWarnY = player.y;
                                 spawnParticles(this.x, this.y, 20, '#ff6622', 90, 0.5, 5);
                             }
@@ -454,14 +483,14 @@
                             this.lavaHardenTimer -= dt;
                             if (this.lavaHardenTimer <= 0 && this.hardened <= 0 && !this.leaping) {
                                 this.lavaHardenTimer = this.lavaHardenInterval * rush;
-                                this.hardened = 3;
+                                this.hardened = 2.5;
                                 spawnParticles(this.x, this.y, 22, '#cccccc', 70, 0.6, 4);
                                 sound.play('shield');
                             }
                             // 召唤熔岩幼体
                             this.summonTimer -= dt;
                             if (this.summonTimer <= 0) {
-                                this.summonTimer = this.summonInterval * (this.enraged ? 0.8 : 1);
+                                this.summonTimer = this.summonInterval * (this.enraged ? 0.7 : 1);
                                 for (let i = 0; i < this.summonCount; i++) {
                                     if (game.enemies.length >= MAX_ENEMIES) break;
                                     const ang = rand(0, Math.PI * 2);

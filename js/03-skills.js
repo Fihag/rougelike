@@ -13,7 +13,7 @@
                 frost_nova:      () => ({ type: 'frost_nova', level: 1, cooldown: 0, cooldownTime: 2.2, radius: 130, damage: 32, damageMultiplier: 1, slowAmount: 0.50, slowDuration: 2.2 }),
                 lightning_chain: () => ({ type: 'lightning_chain', level: 1, cooldown: 0, cooldownTime: 0.95, damage: 20, damageMultiplier: 1, bounceCount: 1, bounceRange: 120, damageFalloff: 0.3, hitCooldowns: new Map(), hitCdTime: 0.25 }),
                 meteor:          () => ({ type: 'meteor', level: 1, cooldown: 0, cooldownTime: 5.0, damage: 110, damageMultiplier: 1, radius: 100, doubleChance: 0 }),
-                shadow_spirit:   () => ({ type: 'shadow_spirit', level: 1, spiritCount: 2, damage: 13, damageMultiplier: 1, attackSpeed: 1.3125, attackSpeedMultiplier: 1, slowChance: 0, slowAmount: 0.3, slowDuration: 1.5, attackTimer: 0, lockReduction: 0 })
+                shadow_spirit:   () => ({ type: 'shadow_spirit', level: 1, spiritCount: 2, damage: 13, damageMultiplier: 1, attackSpeed: 1.2625, attackSpeedMultiplier: 1, slowChance: 0, slowAmount: 0.3, slowDuration: 1.5, attackTimer: 0, lockReduction: 0 })
             };
             const START_WEAPON_META = {
                 magic_missile:   { name: '魔法弹', icon: 'flame' },
@@ -195,7 +195,7 @@
                     apply: (p) => {
                         p.weapons.push({
                             type: 'shadow_spirit', level: 1, spiritCount: 2, damage: 13, damageMultiplier: 1,
-                            attackSpeed: 1.3125, attackSpeedMultiplier: 1,
+                            attackSpeed: 1.2625, attackSpeedMultiplier: 1,
                             slowChance: 0, slowAmount: 0.3, slowDuration: 1.5,
                             attackTimer: 0, lockReduction: 0
                         });
@@ -253,9 +253,9 @@
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'meteor'); if (w) { w.evolved = 'starfall'; w.cooldownTime = 2.5; w.damageMultiplier = (w.damageMultiplier || 1) + 0.40; w.leaveBurning = true; w.burningDuration = 2; w.burningTickRate = 0.4; w.burningDamagePercent = 0.30; } }
                 },
                 {
-                    id: 'evo_shadow', name: '暗影军团', icon: 'users', desc: '精灵+1，攻速+30%', maxLevel: 1, color: '#6600cc',
+                    id: 'evo_shadow', name: '暗影军团', icon: 'users', desc: '攻速+30%', maxLevel: 1, color: '#6600cc',
                     applies: (p) => { const w = p.weapons.find(w => w.type === 'shadow_spirit'); return w && (p['_skill_shadow_count'] || 0) >= 3 && (p['_skill_shadow_speed'] || 0) >= 3 && (p['_skill_shadow_damage'] || 0) >= 3 && !p['_skill_evo_shadow']; },
-                    apply: (p) => { const w = p.weapons.find(w => w.type === 'shadow_spirit'); if (w) { w.evolved = 'shadow_legion'; w.spiritCount += 1; w.attackSpeedMultiplier = (w.attackSpeedMultiplier || 1) * 1.3; } }
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'shadow_spirit'); if (w) { w.evolved = 'shadow_legion'; w.attackSpeedMultiplier = (w.attackSpeedMultiplier || 1) * 1.3; } }
                 },
                 // ===== 协同技能 =====
                 {
