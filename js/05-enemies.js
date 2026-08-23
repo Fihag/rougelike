@@ -116,10 +116,13 @@
                         this.shockwaveDamage = Math.floor((def.shockwaveDamage || 18) * grow(sc.shockwaveRate));
                         this.shockwaveHit = false;
                         // ===== 瞬影突进（暗影刺客） =====
-                        this.teleportTimer = 4;
+                        // 预警间隔：初始 4s 减 0.8s；狂暴阶段 [6, 4.5, 3.5] 各减 0.8s
+                        this.teleportTimer = 3.2;
                         this.teleportInterval = 4;
                         this.teleporting = false;
                         this.teleportProgress = 0;
+                        // 闪现引导（落点预警）时间：0.9s 减 0.5s
+                        this.teleportCharge = 0.4;
                         // ===== 影刃回旋（暗影刺客） =====
                         this.shurikenDamage = Math.floor((def.shurikenDamage || 16) * grow(sc.slashRate));
                         this.shurikenSpeed = def.shurikenSpeed || 240;
@@ -408,10 +411,10 @@
                                 }
                             } else {
                                 this.teleportProgress += dt;
-                                if (this.teleportProgress >= this.chargeTime) {
+                                if (this.teleportProgress >= this.teleportCharge) {
                                     this.doTeleport(player);
                                     this.teleporting = false;
-                                    this.teleportTimer = [6, 4.5, 3.5][enraged];
+                                    this.teleportTimer = [5.2, 3.7, 2.7][enraged];
                                 }
                             }
                             // 影刃回旋：朝玩家方向环形飞刀（狂暴时更快）
@@ -552,11 +555,11 @@
                 }
 
                 computeTeleportTarget(player) {
-                    // 预计算闪现降落位置：玩家侧后方更远处（180px）
+                    // 预计算闪现降落位置：玩家侧后方更远处（140px）
                     const angle = Math.atan2(player.y - this.y, player.x - this.x);
                     const side = Math.random() < 0.5 ? Math.PI / 2 : -Math.PI / 2;
-                    this.teleportTX = clamp(player.x + Math.cos(angle + Math.PI + side) * 180, 40, WORLD_W - 40);
-                    this.teleportTY = clamp(player.y + Math.sin(angle + Math.PI + side) * 180, 40, WORLD_H - 40);
+                    this.teleportTX = clamp(player.x + Math.cos(angle + Math.PI + side) * 140, 40, WORLD_W - 40);
+                    this.teleportTY = clamp(player.y + Math.sin(angle + Math.PI + side) * 140, 40, WORLD_H - 40);
                 }
 
                 doTeleport(player) {
@@ -667,7 +670,7 @@
                         ctx.beginPath(); ctx.arc(this.x, this.y, this.size + 22 + Math.sin(game.time * 3) * 3, 0, Math.PI * 2); ctx.stroke();
                     }
                     if (this.typeKey === 'assassin' && this.teleporting) {
-                        const progress = this.teleportProgress / this.chargeTime;
+                        const progress = this.teleportProgress / this.teleportCharge;
                         const pulse = 0.6 + Math.sin(game.time * 20) * 0.4;
                         ctx.strokeStyle = `rgba(176,106,255,${0.5 + progress * 0.5})`; ctx.lineWidth = 3;
                         ctx.beginPath(); ctx.arc(this.x, this.y, this.size + 12 + pulse * 2, 0, Math.PI * 2); ctx.stroke();
