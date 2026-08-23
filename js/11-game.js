@@ -852,6 +852,15 @@
                 }
                 else if (e.key === 'm' || e.key === 'M') { btnMute.innerHTML = sound.toggleMute() ? ICONS['volume-x'] : ICONS['volume-2']; }
             });
+            // ===== 暂停面板：继续游戏 =====
+            if (pauseResumeBtn) {
+                pauseResumeBtn.addEventListener('click', () => {
+                    if (game.state !== 'playing') return;
+                    dbg.pauseGame = false;
+                    btnPause.innerHTML = ICONS.pause;
+                    const dbgPauseEl = $inp('dbg-pause'); if (dbgPauseEl) dbgPauseEl.checked = false;
+                });
+            }
             // ===== 暂停面板：返回主菜单（结算本局碎片） =====
             if (pauseMenuBtn) {
                 pauseMenuBtn.addEventListener('click', () => {

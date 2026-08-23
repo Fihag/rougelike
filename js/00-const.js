@@ -25,6 +25,7 @@
             const btnDeathMark = document.getElementById('btn-death-mark');
             const pauseMenuBtn = document.getElementById('pause-menu-btn');
             const pauseRestartBtn = document.getElementById('pause-restart-btn');
+            const pauseResumeBtn = document.getElementById('pause-resume-btn');
             const dmBuyModal = document.getElementById('dm-buy-modal');
             const dmBuyCancel = document.getElementById('dm-buy-cancel');
             const dmBuyConfirm = document.getElementById('dm-buy-confirm');

@@ -43,11 +43,11 @@
                     levelupCards.appendChild(card);
                 });
                 levelupPanel.style.display = 'flex';
-                // 点击保护：1.5 秒内不可选择，避免移动/误触
-                game.levelupLock = 1.5;
+                // 点击保护：0.8 秒内不可选择，避免移动/误触
+                game.levelupLock = 0.8;
                 levelupPanel.classList.add('locked');
                 const lockHint = $inp('levelup-lock-hint');
-                if (lockHint) lockHint.textContent = '2 秒后可选择';
+                if (lockHint) lockHint.textContent = '1 秒后可选择';
                 game.rerollUsed = false;
                 skipBtn.disabled = false;
                 skipBtn.style.opacity = '1';
@@ -119,10 +119,10 @@
                     levelupCards.appendChild(card);
                 });
                 // 换一批后同样进入短保护
-                game.levelupLock = 1.5;
+                game.levelupLock = 0.8;
                 levelupPanel.classList.add('locked');
                 const lockHint = $inp('levelup-lock-hint');
-                if (lockHint) lockHint.textContent = '2 秒后可选择';
+                if (lockHint) lockHint.textContent = '1 秒后可选择';
                 skipBtn.disabled = true;
                 skipBtn.style.opacity = '0.4';
                 skipBtn.style.cursor = 'not-allowed';
