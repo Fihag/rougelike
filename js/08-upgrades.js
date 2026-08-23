@@ -156,9 +156,9 @@
                 game.player.relicGreed = isRelicActive('relic_greed');
                 game.player.relicBomb = isRelicActive('relic_bomb');
                 // 幻影步：受击闪避概率随圣物等级
-                const phantomLv = isRelicActive('relic_phantom_step') ? relicLevel('relic_phantom_step') : 0;
-                const phantomDef = META_RELICS.find(x => x.id === 'relic_phantom_step');
-                game.player.relicDodgeChance = (phantomLv > 0 && phantomDef) ? phantomDef.rate[phantomLv - 1] : 0;
+                game.player.relicDodgeChance = isRelicActive('relic_phantom_step') ? (relicRate('relic_phantom_step') || 0.15) : 0;
+                // 背水一战：低血增伤系数开局缓存（避免每次伤害计算遍历查找）
+                game.player.relicLastStandRate = isRelicActive('relic_last_stand') ? (relicRate('relic_last_stand') || 0.25) : 0;
                 // 影子分身 / 时停领域（计时状态挂在 game 上）
                 game.player.relicClone = isRelicActive('relic_shadow_clone');
                 game.player.relicTimeStop = isRelicActive('relic_time_stop');
@@ -171,18 +171,16 @@
                     game.player.soulShieldRegenTime = Math.max(4, 15 - 3 * (shieldLv - 1));
                     game.player.soulShieldAmount = game.player.soulShieldMax;
                 }
-                if (game.player.relicBomb) { game.bombTimer = 10; }
                 game.soulShards = 0;
                 game.waveTimer = 100; game.waveState = 'idle'; game.waveEliteLeft = 0; game.waveNoticeTimer = 0;
                 game.chests = [];
-                game.bombTimer = 0;
+                // 定时炸弹：穿戴时首爆固定在开局 10 秒后（此前提前赋值被下方清零覆盖，导致开局瞬间即爆）
+                game.bombTimer = game.player.relicBomb ? 10 : 0;
                 game.altars = []; game.altarTimer = 45;
                 // 影子分身/时停领域计时器复位（时停首次触发按当前圣物等级间隔）
                 game.cloneTimer = 1.5; game.cloneAngle = 0; game.cloneX = undefined; game.cloneY = undefined;
                 if (game.player.relicTimeStop) {
-                    const tsLv = relicLevel('relic_time_stop');
-                    const tsDef = META_RELICS.find(x => x.id === 'relic_time_stop');
-                    game.timeStopTimer = (tsDef && tsLv > 0) ? tsDef.rate[tsLv - 1] : 45;
+                    game.timeStopTimer = relicRate('relic_time_stop') || 45;
                 } else { game.timeStopTimer = 0; }
                 game.superBossSpawned = false; game.bossKilledCount = 0;
                 game.achievements = {};

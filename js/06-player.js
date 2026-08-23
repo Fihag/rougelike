@@ -32,6 +32,7 @@
                     this.oneShotShield = false; this.burstTimer = 0;
                     this.revengeTimer = 0;
                     this.relicDodgeChance = 0;
+                    this.relicLastStandRate = 0;
                     this.slowTimer = 0; this.slowAmount = 0;
                     this.dotEffects = [];
                     this.weapons = [
@@ -43,12 +44,10 @@
                 getEffectivePickupRange() { return this.pickupRange * this.pickupRangeMultiplier; }
                 // 风险祭坛增益：剩余时间 >0 时伤害 ×1.5
                 getRiskMult() { return this.riskBuffTimer > 0 ? 1.5 : 1; }
-                // 背水一战圣物：生命越低伤害越高（每损失 1% 生命 +rate%，rate 随圣物等级提升）
+                // 背水一战圣物：生命越低伤害越高（每损失 1% 生命 +rate%，rate 开局按圣物等级缓存）
                 getLowHpMult() {
-                    const lv = relicLevel('relic_last_stand');
-                    if (lv <= 0 || !isRelicActive('relic_last_stand') || this.maxHp <= 0) return 1;
-                    const def = META_RELICS.find(x => x.id === 'relic_last_stand');
-                    const rate = def && def.rate ? def.rate[lv - 1] : 0.25;
+                    const rate = this.relicLastStandRate || 0;
+                    if (rate <= 0 || this.maxHp <= 0) return 1;
                     return 1 + clamp((this.maxHp - this.hp) / this.maxHp, 0, 1) * rate;
                 }
                 getEffectiveSpeed() { return this.speed * this.speedMultiplier * (this.slowTimer > 0 ? (1 - this.slowAmount) : 1) * (this.burstTimer > 0 ? 1.4 : 1); }

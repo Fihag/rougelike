@@ -262,9 +262,7 @@
                     }
                     // 影子分身：环绕玩家旋转，按圣物等级间隔向最近敌人发射暗影弹
                     if (player.relicClone) {
-                        const cLv = relicLevel('relic_shadow_clone');
-                        const cDef = META_RELICS.find(x => x.id === 'relic_shadow_clone');
-                        const cInt = (cDef && cLv > 0) ? cDef.rate[cLv - 1] : 2.0;
+                        const cInt = relicRate('relic_shadow_clone') || 2.0;
                         game.cloneAngle = (game.cloneAngle || 0) + cappedDt * 2;
                         const cr = player.size + 30;
                         game.cloneX = player.x + Math.cos(game.cloneAngle) * cr;
@@ -288,13 +286,12 @@
                     if (player.relicTimeStop) {
                         game.timeStopTimer -= cappedDt;
                         if (game.timeStopTimer <= 0) {
-                            const tLv = relicLevel('relic_time_stop');
-                            const tDef = META_RELICS.find(x => x.id === 'relic_time_stop');
-                            game.timeStopTimer = (tDef && tLv > 0) ? tDef.rate[tLv - 1] : 45;
+                            game.timeStopTimer = relicRate('relic_time_stop') || 45;
                             let frozen = 0;
                             for (const e of game.enemies) {
                                 if (!e.alive || e.deathMarked) continue;
                                 e.freezeTimer = Math.max(e.freezeTimer || 0, 2);
+                                e.flashTimer = Math.max(e.flashTimer || 0, 0.25); // 冻结瞬间闪白，强化时停反馈
                                 frozen++;
                             }
                             if (frozen > 0) {
@@ -440,6 +437,12 @@
                 }
                 for (const c of (game.chests || [])) {
                     targets.push({ x: c.x, y: c.y, color: '#ffd700', label: '宝箱' });
+                }
+                // Boss（含超级Boss）：紫红箭头，文字用敌人类型名
+                for (const e of game.enemies) {
+                    if (!e.alive || !e.isBoss) continue;
+                    const bd = ENEMY_TYPES[e.typeKey];
+                    targets.push({ x: e.x, y: e.y, color: '#ff44dd', label: (bd && bd.name) || 'Boss' });
                 }
                 if (!targets.length) return;
                 // 玩家实际屏幕位置（镜头 clamp 时玩家不居中，以其为射线起点更准确）
