@@ -121,11 +121,14 @@
             // ===== 世界尺寸与镜头（世界固定大于视口，镜头跟随玩家，大小屏难度一致） =====
             const WORLD_W = 2000, WORLD_H = 1500;
             const cam = { x: 0, y: 0 };
+            // 像素缩放（devicePixelRatio，上限 2）：draw 每帧据此重置变换，避免上一帧残余变换导致清屏错位/残影
+            let PIXEL_SCALE = 1;
 
             function resizeCanvas() {
                 const rect = wrapper.getBoundingClientRect();
                 const dpr = Math.min(window.devicePixelRatio || 1, 2);
                 const nw = rect.width, nh = rect.height;
+                PIXEL_SCALE = dpr;
                 if (nw === W && nh === H && canvas.width === nw * dpr && canvas.height === nh * dpr) return;
                 W = nw;
                 H = nh;

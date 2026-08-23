@@ -385,10 +385,12 @@
             }
 
             function draw(ctx) {
+                // 每帧从确定的变换开始：重置为像素缩放再清屏/铺底色，避免上一帧残留变换导致清屏错位、顶端出现残影
+                ctx.setTransform(PIXEL_SCALE, 0, 0, PIXEL_SCALE, 0, 0);
                 ctx.clearRect(0, 0, W, H);
+                ctx.fillStyle = '#2b160c'; ctx.fillRect(0, 0, W, H);
                 const shake = getShakeOffset();
                 ctx.save(); ctx.translate(shake.x, shake.y);
-                ctx.fillStyle = '#2b160c'; ctx.fillRect(-10, -10, W + 20, H + 20);
                 // 精英波次提示
                 if (game.state === 'playing' && game.waveState !== 'idle') {
                     let txt = '';
@@ -526,6 +528,7 @@
                         ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
                     }
                 }
+                ctx.restore(); // 平衡开头的 shake 层 save
                 updateHud();
             }
 
