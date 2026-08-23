@@ -5,7 +5,7 @@
                 normal: { name: '普通', diffStart: 1, mult: 1, bossTimer: 90, spawnInterval: 1.3, spawnStep: 0.04, spawnMin: 0.30, bossRespawn: 70, playerHp: 100, shardMult: 1 },
                 hard:   { name: '困难', diffStart: 3, mult: 1.15, bossTimer: 75, spawnInterval: 1.2, spawnStep: 0.045, spawnMin: 0.28, bossRespawn: 65, playerHp: 90, shardMult: 1.5 },
                 hell:   { name: '地狱', diffStart: 5, mult: 1.30, bossTimer: 60, spawnInterval: 1.1, spawnStep: 0.06, spawnMin: 0.25, bossRespawn: 55, playerHp: 85, shardMult: 1.8 },
-                impossible: { name: '不可能', diffStart: 8, mult: 1.45, bossTimer: 50, spawnInterval: 1.0, spawnStep: 0.065, spawnMin: 0.22, bossRespawn: 48, playerHp: 80, shardMult: 2.4 }
+                impossible: { name: '不可能', diffStart: 8, mult: 1.6, bossTimer: 50, spawnInterval: 1.0, spawnStep: 0.07, spawnMin: 0.2, bossRespawn: 48, playerHp: 75, shardMult: 2.4 }
             };
             const START_WEAPON_DEFS = {
                 magic_missile:   () => ({ type: 'magic_missile', level: 1, cooldown: 0, cooldownTime: 0.85, cooldownMultiplier: 1, damage: 21, damageMultiplier: 1, projectileSpeed: 350, extraProjectiles: 0, splashRadius: 28, splashDamagePercent: 0.35 }),
