@@ -222,6 +222,20 @@
             border: 2px solid var(--orange); margin-bottom: 12px;
         }
         .meta-list { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        /* 宝库分区按钮：左天赋 / 右圣物 */
+        .meta-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+        .meta-tab {
+            flex: 1; padding: 9px 0; font-size: 14px; font-weight: bold; letter-spacing: 0.1em;
+            border-radius: 12px; border: 2px solid var(--orange); background: var(--cream-2);
+            color: var(--brown-soft); cursor: pointer; transition: all 0.15s;
+            box-shadow: 0 3px 0 rgba(180,90,20,0.25);
+        }
+        .meta-tab:hover { background: #ffefd6; transform: translateY(-1px); }
+        .meta-tab.active {
+            background: linear-gradient(180deg, var(--orange), #e8862a); color: #fff;
+            border-color: var(--orange-deep); box-shadow: 0 3px 0 #a86a10; transform: translateY(-1px);
+            text-shadow: 0 1px 0 rgba(120,60,0,0.4);
+        }
         .meta-item {
             display: flex; align-items: center; justify-content: space-between; gap: 12px;
             padding: 12px 14px; border-radius: 16px; text-align: left;

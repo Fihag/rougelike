@@ -761,10 +761,16 @@
                 menuShards.textContent = `灵魂碎片：${metaData.shards || 0}`;
             }
 
-            // ===== 灵魂宝库面板 =====
+            // ===== 灵魂宝库面板（分区：talent=天赋 / relic=圣物） =====
+            let metaTab = 'talent';
             function renderMetaPanel() {
                 metaShardsShow.textContent = `灵魂碎片：${metaData.shards || 0}`;
+                // 分区按钮高亮
+                const isTalent = metaTab === 'talent';
+                metaTabTalent.classList.toggle('active', isTalent);
+                metaTabRelic.classList.toggle('active', !isTalent);
                 metaList.innerHTML = '';
+                if (!isTalent) return renderMetaRelics();
                 // 永久升级树
                 for (const u of META_UPGRADES) {
                     const lv = metaLevel(u.id);
@@ -801,12 +807,11 @@
                     item.appendChild(btn);
                     metaList.appendChild(item);
                 }
-                // 圣物商店分隔
-                const sep = document.createElement('div');
-                sep.style.cssText = 'font-weight:bold;color:var(--orange-deep);font-size:14px;margin:8px 0 2px;letter-spacing:0.05em;';
-                sep.textContent = '—— 圣物商店 ——';
-                metaList.appendChild(sep);
-                // 圣物（带 maxLevel 的可升级；可自由穿戴/卸下，卸下后效果不生效）
+            }
+
+            // 圣物分区渲染（带 maxLevel 的可升级；可自由穿戴/卸下，卸下后效果不生效）
+            function renderMetaRelics() {
+                metaList.innerHTML = '';
                 for (const r of META_RELICS) {
                     const lv = relicLevel(r.id);
                     const maxLv = r.maxLevel || 1;
@@ -861,6 +866,9 @@
                 }
             }
             btnOpenMeta.addEventListener('click', () => { renderMetaPanel(); menuOverlay.style.display = 'none'; metaPanel.style.display = 'flex'; });
+            // 宝库分区切换：左天赋 / 右圣物
+            metaTabTalent.addEventListener('click', () => { if (metaTab !== 'talent') { metaTab = 'talent'; renderMetaPanel(); } });
+            metaTabRelic.addEventListener('click', () => { if (metaTab !== 'relic') { metaTab = 'relic'; renderMetaPanel(); } });
             metaClose.addEventListener('click', () => { metaPanel.style.display = 'none'; menuOverlay.style.display = 'flex'; renderMenu(); syncDeathMarkUI(); });
             // 清空存档：清除灵魂碎片/永久升级/圣物/成就/最佳记录
             metaReset.addEventListener('click', () => {

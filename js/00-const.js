@@ -54,6 +54,8 @@
             const metaList = document.getElementById('meta-list');
             const metaClose = document.getElementById('meta-close');
             const metaReset = document.getElementById('meta-reset');
+            const metaTabTalent = document.getElementById('meta-tab-talent');
+            const metaTabRelic = document.getElementById('meta-tab-relic');
             const menuStart = document.getElementById('menu-start');
             const menuBtn = document.getElementById('menu-btn');
             const hudTop = document.getElementById('hud-top');
