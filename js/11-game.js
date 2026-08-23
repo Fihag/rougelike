@@ -391,21 +391,6 @@
                 ctx.fillStyle = '#2b160c'; ctx.fillRect(0, 0, W, H);
                 const shake = getShakeOffset();
                 ctx.save(); ctx.translate(shake.x, shake.y);
-                // 精英波次提示
-                if (game.state === 'playing' && game.waveState !== 'idle') {
-                    let txt = '';
-                    if (game.waveState === 'warning') txt = '精英波次来袭！' + Math.ceil(Math.max(0, game.waveTimer)) + ' 秒后降临';
-                    else if (game.waveState === 'active') txt = '精英波次！清除所有精英';
-                    else if (game.waveState === 'reward') txt = '宝箱已空投！';
-                    ctx.save();
-                    ctx.font = 'bold 22px "Impact","Arial Black","PingFang SC",sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.shadowColor = '#ff6600'; ctx.shadowBlur = 12;
-                    ctx.fillStyle = '#ffcc66';
-                    ctx.fillText(txt, W / 2, 70);
-                    ctx.shadowBlur = 0;
-                    ctx.restore();
-                }
                 // ===== 世界空间：镜头平移后绘制世界底色、网格与世界内全部实体 =====
                 ctx.save(); ctx.translate(-cam.x, -cam.y);
                 ctx.fillStyle = '#2b160c'; ctx.fillRect(0, 0, WORLD_W, WORLD_H);
@@ -529,6 +514,21 @@
                     }
                 }
                 ctx.restore(); // 平衡开头的 shake 层 save
+                // 精英波次提示（屏幕空间：必须在世界层之后绘制，否则被世界底色覆盖）
+                if (game.state === 'playing' && game.waveState !== 'idle') {
+                    let txt = '';
+                    if (game.waveState === 'warning') txt = '精英波次来袭！' + Math.ceil(Math.max(0, game.waveTimer)) + ' 秒后降临';
+                    else if (game.waveState === 'active') txt = '精英波次！清除所有精英';
+                    else if (game.waveState === 'reward') txt = '宝箱已空投！';
+                    ctx.save();
+                    ctx.font = 'bold 22px "Impact","Arial Black","PingFang SC",sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.shadowColor = '#ff6600'; ctx.shadowBlur = 12;
+                    ctx.fillStyle = '#ffcc66';
+                    ctx.fillText(txt, W / 2, 70);
+                    ctx.shadowBlur = 0;
+                    ctx.restore();
+                }
                 updateHud();
             }
 
