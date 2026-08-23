@@ -118,11 +118,7 @@
                     card.addEventListener('touchend', (e) => { e.stopPropagation(); e.preventDefault(); game.applyUpgrade(skill); });
                     levelupCards.appendChild(card);
                 });
-                // 换一批后同样进入短保护
-                game.levelupLock = 0.8;
-                levelupPanel.classList.add('locked');
-                const lockHint = $inp('levelup-lock-hint');
-                if (lockHint) lockHint.textContent = '1 秒后可选择';
+                // 换一批后不设点击保护：玩家刚主动点击按钮，可直接选择新选项
                 skipBtn.disabled = true;
                 skipBtn.style.opacity = '0.4';
                 skipBtn.style.cursor = 'not-allowed';
@@ -206,7 +202,7 @@
                 skipBtn.disabled = false;
                 skipBtn.style.opacity = '1';
                 skipBtn.style.cursor = 'pointer';
-                game.player.x = W / 2; game.player.y = H / 2;
+                game.player.x = WORLD_W / 2; game.player.y = WORLD_H / 2;
                 resizeCanvas();
             }
 

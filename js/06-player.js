@@ -17,7 +17,7 @@
             // ==================== 玩家类 ====================
             class Player {
                 constructor() {
-                    this.x = W / 2; this.y = H / 2; this.size = 14;
+                    this.x = WORLD_W / 2; this.y = WORLD_H / 2; this.size = 14;
                     this.speed = 260; this.speedMultiplier = 1;
                     this.hp = 100; this.maxHp = 100;
                     this.hpRegenPercent = 0.017;
@@ -184,8 +184,8 @@
                     if (mx !== 0 || my !== 0) { const mag = Math.hypot(mx, my); mx /= mag; my /= mag; }
                     const spd = this.getEffectiveSpeed();
                     this.x += mx * spd * dt; this.y += my * spd * dt;
-                    this.x = clamp(this.x, this.size, W - this.size);
-                    this.y = clamp(this.y, this.size, H - this.size);
+                    this.x = clamp(this.x, this.size, WORLD_W - this.size);
+                    this.y = clamp(this.y, this.size, WORLD_H - this.size);
                     if (this.invincibleTimer > 0) this.invincibleTimer -= dt;
                     if (this.flashTimer > 0) this.flashTimer -= dt;
                     if (this.riskBuffTimer > 0) this.riskBuffTimer -= dt;

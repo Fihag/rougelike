@@ -14,7 +14,7 @@
                     for (const tp of this.trailPositions) tp.life -= dt;
                     this.trailPositions = this.trailPositions.filter(tp => tp.life > 0);
                     this.x += this.vx * dt; this.y += this.vy * dt;
-                    if (this.x < -30 || this.x > W + 30 || this.y < -30 || this.y > H + 30) this.alive = false;
+                    if (this.x < -30 || this.x > WORLD_W + 30 || this.y < -30 || this.y > WORLD_H + 30) this.alive = false;
                 }
                 draw(ctx) {
                     if (this.isEnemy) {

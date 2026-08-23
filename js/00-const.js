@@ -118,6 +118,10 @@
 
             let W, H;
 
+            // ===== 世界尺寸与镜头（世界固定大于视口，镜头跟随玩家，大小屏难度一致） =====
+            const WORLD_W = 2000, WORLD_H = 1500;
+            const cam = { x: 0, y: 0 };
+
             function resizeCanvas() {
                 const rect = wrapper.getBoundingClientRect();
                 const dpr = Math.min(window.devicePixelRatio || 1, 2);

@@ -4,6 +4,26 @@
             const WAVE_ELITE_COUNT = 12;
             const WAVE_NOTICE_TIME = 10;
 
+            // ===== 世界内环形采样：以玩家为中心、固定距离生成（与屏幕大小无关，大小屏难度一致） =====
+            function pickWorldSpot(minR, maxR) {
+                const p = game.player;
+                if (!p) return { x: WORLD_W / 2, y: WORLD_H / 2 };
+                for (let i = 0; i < 12; i++) {
+                    const ang = Math.random() * Math.PI * 2;
+                    const r = minR + Math.random() * (maxR - minR);
+                    const x = clamp(p.x + Math.cos(ang) * r, 40, WORLD_W - 40);
+                    const y = clamp(p.y + Math.sin(ang) * r, 40, WORLD_H - 40);
+                    if (Math.hypot(x - p.x, y - p.y) >= minR * 0.5) return { x, y };
+                }
+                // 重采样不足（玩家贴世界角落）：朝世界中心方向取保底距离点
+                const dx = WORLD_W / 2 - p.x, dy = WORLD_H / 2 - p.y;
+                const dd = Math.hypot(dx, dy) || 1;
+                return {
+                    x: clamp(p.x + dx / dd * minR * 0.6, 40, WORLD_W - 40),
+                    y: clamp(p.y + dy / dd * minR * 0.6, 40, WORLD_H - 40)
+                };
+            }
+
             function startEliteWave() {
                 game.waveState = 'warning';
                 game.waveTimer = WAVE_NOTICE_TIME;
@@ -27,12 +47,9 @@
                     }
                     const count = Math.min(4, game.waveEliteLeft);
                     for (let i = 0; i < count; i++) {
-                        const side = randInt(0, 3);
-                        let x, y; const margin = 40;
-                        if (side === 0) { x = rand(margin, W - margin); y = -margin; }
-                        else if (side === 1) { x = W + margin; y = rand(margin, H - margin); }
-                        else if (side === 2) { x = rand(margin, W - margin); y = H + margin; }
-                        else { x = -margin; y = rand(margin, H - margin); }
+                        // 精英从玩家周围环形带空降（远离视口边缘，避免小屏贴脸）
+                        const spot = pickWorldSpot(650, 850);
+                        let x = spot.x, y = spot.y;
                         // 精英：较高血量/伤害/速度的变体（随机类型），强化属性 + 自愈
                         const types = ['zombie', 'runner', 'brute', 'wraith', 'pyromancer'];
                         const typeKey = types[randInt(0, types.length - 1)];
@@ -54,7 +71,9 @@
             }
 
             function spawnChest() {
-                const cx = rand(W * 0.2, W * 0.8), cy = rand(H * 0.2, H * 0.8);
+                // 宝箱空投在玩家附近（可及范围）
+                const spot = pickWorldSpot(380, 600);
+                const cx = spot.x, cy = spot.y;
                 game.chests.push({ x: cx, y: cy, life: 30, bob: rand(0, Math.PI * 2) });
                 game.waveState = 'reward';
                 game.warningText = '精英波次已清除！宝箱已空投';
@@ -103,10 +122,11 @@
             function spawnAltar() {
                 const types = ['heal', 'risk', 'portal'];
                 const type = types[randInt(0, types.length - 1)];
+                const spot = pickWorldSpot(380, 600);
                 game.altars.push({
                     type: type,
-                    x: rand(W * 0.15, W * 0.85),
-                    y: rand(H * 0.15, H * 0.85),
+                    x: spot.x,
+                    y: spot.y,
                     life: 20,
                     pulse: rand(0, Math.PI * 2)
                 });
@@ -134,8 +154,8 @@
                 } else {
                     // 传送门：传送到地图另一侧，原地留下更大减速区域，并获得短暂爆发与无敌
                     const oldX = p.x, oldY = p.y;
-                    p.x = clamp(W - p.x, p.size, W - p.size);
-                    p.y = clamp(H - p.y, p.size, H - p.size);
+                    p.x = clamp(WORLD_W - p.x, p.size, WORLD_W - p.size);
+                    p.y = clamp(WORLD_H - p.y, p.size, WORLD_H - p.size);
                     game.fireZones.push({ x: oldX, y: oldY, radius: 120, damage: 0, remaining: 8, tickRate: 0.5, tickTimer: 0, isSlowZone: true });
                     p.burstTimer = Math.max(p.burstTimer || 0, 6);
                     p.invincibleTimer = Math.max(p.invincibleTimer || 0, 2);
@@ -150,12 +170,9 @@
 
             function spawnEnemy() {
                 if (game.enemies.length >= MAX_ENEMIES) { game.spawnTimer = 1; return; }
-                const side = randInt(0, 3);
-                let x, y; const margin = 30;
-                if (side === 0) { x = rand(-margin, W + margin); y = -margin; }
-                else if (side === 1) { x = W + margin; y = rand(-margin, H + margin); }
-                else if (side === 2) { x = rand(-margin, W + margin); y = H + margin; }
-                else { x = -margin; y = rand(-margin, H + margin); }
+                // 以玩家为中心环形带生成（固定距离，与屏幕大小无关）
+                const spot = pickWorldSpot(650, 800);
+                let x = spot.x, y = spot.y;
                 let typeKey = 'zombie';
                 const t = game.time;
                 if (t > 20 && Math.random() < 0.25) typeKey = 'runner';
@@ -171,12 +188,9 @@
             function spawnBoss() {
                 if (game.bossOnField) return;
                 if (game.enemies.length >= MAX_ENEMIES) { game.bossTimer = 10; return; }
-                const side = randInt(0, 3);
-                let x, y; const margin = 40;
-                if (side === 0) { x = rand(margin, W - margin); y = -margin; }
-                else if (side === 1) { x = W + margin; y = rand(margin, H - margin); }
-                else if (side === 2) { x = rand(margin, W - margin); y = H + margin; }
-                else { x = -margin; y = rand(margin, H - margin); }
+                // Boss 在更远的环形带降临（预警更充分）
+                const spot = pickWorldSpot(750, 900);
+                let x = spot.x, y = spot.y;
                 game.bossAppearedCount++;
                 const diffBonus = game.difficultyLevel - 1;
                 const bossTypes = ['boss', 'broodmother', 'assassin'];
@@ -201,12 +215,9 @@
             function spawnSuperBoss() {
                 if (game.superBossSpawned || game.bossOnField) return;
                 game.superBossSpawned = true;
-                const side = randInt(0, 3);
-                let x, y; const margin = 40;
-                if (side === 0) { x = rand(margin, W - margin); y = -margin; }
-                else if (side === 1) { x = W + margin; y = rand(margin, H - margin); }
-                else if (side === 2) { x = rand(margin, W - margin); y = H + margin; }
-                else { x = -margin; y = rand(margin, H - margin); }
+                // 与普通 Boss 同距离环形带降临
+                const spot = pickWorldSpot(750, 900);
+                let x = spot.x, y = spot.y;
                 const diffBonus = game.difficultyLevel - 1;
                 const boss = new Enemy(x, y, 'assassin', diffBonus);
                 boss.isSuperBoss = true;

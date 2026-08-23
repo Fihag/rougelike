@@ -327,8 +327,8 @@
                                 if (game.enemies.length < MAX_ENEMIES) {
                                     for (let i = 0; i < summonN; i++) {
                                         const ang = rand(0, Math.PI * 2);
-                                        const mx = clamp(this.x + Math.cos(ang) * (this.size + 18), 20, W - 20);
-                                        const my = clamp(this.y + Math.sin(ang) * (this.size + 18), 20, H - 20);
+                                        const mx = clamp(this.x + Math.cos(ang) * (this.size + 18), 20, WORLD_W - 20);
+                                        const my = clamp(this.y + Math.sin(ang) * (this.size + 18), 20, WORLD_H - 20);
                                         const minion = new Enemy(mx, my, this.summonType, game.difficultyLevel - 1);
                                         minion.bossMinion = this;
                                         if (phase3) {
@@ -483,7 +483,7 @@
                         if (od < minDist && od > 0) { sepX += (this.x - other.x) / od * (minDist - od) * 0.5; sepY += (this.y - other.y) / od * (minDist - od) * 0.5; }
                     }
                     this.x += mx * spd * dt + sepX * dt * 0.8; this.y += my * spd * dt + sepY * dt * 0.8;
-                    this.x = clamp(this.x, this.size, W - this.size); this.y = clamp(this.y, this.size, H - this.size);
+                    this.x = clamp(this.x, this.size, WORLD_W - this.size); this.y = clamp(this.y, this.size, WORLD_H - this.size);
                     if (dist(this, player) < this.size + player.size) {
                         if (this.isGhost) {
                             if (this.dotDamage > 0) {
@@ -555,8 +555,8 @@
                     // 预计算闪现降落位置：玩家侧后方更远处（180px）
                     const angle = Math.atan2(player.y - this.y, player.x - this.x);
                     const side = Math.random() < 0.5 ? Math.PI / 2 : -Math.PI / 2;
-                    this.teleportTX = clamp(player.x + Math.cos(angle + Math.PI + side) * 180, 40, W - 40);
-                    this.teleportTY = clamp(player.y + Math.sin(angle + Math.PI + side) * 180, 40, H - 40);
+                    this.teleportTX = clamp(player.x + Math.cos(angle + Math.PI + side) * 180, 40, WORLD_W - 40);
+                    this.teleportTY = clamp(player.y + Math.sin(angle + Math.PI + side) * 180, 40, WORLD_H - 40);
                 }
 
                 doTeleport(player) {

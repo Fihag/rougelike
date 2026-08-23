@@ -161,8 +161,8 @@
                                     sound.play('hit');
                                     if (proj.knockback) {
                                         const kd = Math.hypot(enemy.x - proj.x, enemy.y - proj.y) || 1;
-                                        enemy.x = clamp(enemy.x + (enemy.x - proj.x) / kd * proj.knockback, enemy.size, W - enemy.size);
-                                        enemy.y = clamp(enemy.y + (enemy.y - proj.y) / kd * proj.knockback, enemy.size, H - enemy.size);
+                                        enemy.x = clamp(enemy.x + (enemy.x - proj.x) / kd * proj.knockback, enemy.size, WORLD_W - enemy.size);
+                                        enemy.y = clamp(enemy.y + (enemy.y - proj.y) / kd * proj.knockback, enemy.size, WORLD_H - enemy.size);
                                     }
                                     if (proj.shadowSlow && proj.slowChance > 0 && Math.random() < proj.slowChance) {
                                         enemy.applySlow(proj.slowAmount, proj.slowDuration);
@@ -186,7 +186,7 @@
                     for (const enemy of game.enemies) if (enemy.alive) enemy.update(cappedDt, player);
                     game.enemies = game.enemies.filter(e => e.alive);
                     // 贪婪之石：经验球自动飞向玩家（全图吸引）
-                    const pickupR = player.relicGreed ? Math.max(W, H) * 2 : player.getEffectivePickupRange();
+                    const pickupR = player.relicGreed ? Math.max(WORLD_W, WORLD_H) * 2 : player.getEffectivePickupRange();
                     for (const orb of game.experienceOrbs) {
                         if (dist(player, orb) < pickupR) {
                             const angle = Math.atan2(player.y - orb.y, player.x - orb.x);
@@ -404,15 +404,15 @@
                     ctx.shadowBlur = 0;
                     ctx.restore();
                 }
+                // ===== 世界空间：镜头平移后绘制世界底色、网格与世界内全部实体 =====
+                ctx.save(); ctx.translate(-cam.x, -cam.y);
+                ctx.fillStyle = '#2b160c'; ctx.fillRect(0, 0, WORLD_W, WORLD_H);
                 ctx.strokeStyle = 'rgba(255,180,120,0.05)'; ctx.lineWidth = 1;
-                for (let gx = 40; gx < W; gx += 40) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
-                for (let gy = 40; gy < H; gy += 40) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
-                // 背景漂浮尘埃
-                for (const d of dustParticles) {
-                    const da = 0.10 + Math.sin(game.time * 1.5 + d.phase) * 0.07;
-                    ctx.fillStyle = `rgba(255,220,180,${Math.max(0.02, da)})`;
-                    ctx.beginPath(); ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2); ctx.fill();
-                }
+                for (let gx = 40; gx < WORLD_W; gx += 40) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, WORLD_H); ctx.stroke(); }
+                for (let gy = 40; gy < WORLD_H; gy += 40) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(WORLD_W, gy); ctx.stroke(); }
+                // 世界边界提示线
+                ctx.strokeStyle = 'rgba(255,150,80,0.35)'; ctx.lineWidth = 3;
+                ctx.strokeRect(0, 0, WORLD_W, WORLD_H);
                 for (const orb of game.experienceOrbs) {
                     const floatY = Math.sin(game.time * 3 + orb.floatOffset) * 3;
                     const alpha = orb.life < 3 ? orb.life / 3 : 1;
@@ -476,6 +476,12 @@
                     ctx.globalAlpha = 1;
                 }
                 ctx.restore();
+                // 背景漂浮尘埃（屏幕空间：随镜头漂移的空气中尘埃）
+                for (const d of dustParticles) {
+                    const da = 0.10 + Math.sin(game.time * 1.5 + d.phase) * 0.07;
+                    ctx.fillStyle = `rgba(255,220,180,${Math.max(0.02, da)})`;
+                    ctx.beginPath(); ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2); ctx.fill();
+                }
                 if (game.state === 'levelup' || game.bossDropChoices) {
                     ctx.fillStyle = 'rgba(43,26,18,0.4)'; ctx.fillRect(0, 0, W, H);
                 }
@@ -601,7 +607,13 @@
                     while (accumulator >= fixedDt) { update(fixedDt); accumulator -= fixedDt; }
                 }
                 resizeCanvas();
-                if (game.player) { game.player.x = clamp(game.player.x, game.player.size, W - game.player.size); game.player.y = clamp(game.player.y, game.player.size, H - game.player.size); }
+                if (game.player) { game.player.x = clamp(game.player.x, game.player.size, WORLD_W - game.player.size); game.player.y = clamp(game.player.y, game.player.size, WORLD_H - game.player.size); }
+                // ===== 镜头跟随玩家（世界固定大于视口；视口比世界大时世界居中） =====
+                if (game.player) {
+                    const cx = WORLD_W - W, cy = WORLD_H - H;
+                    cam.x = cx <= 0 ? cx / 2 : clamp(game.player.x - W / 2, 0, cx);
+                    cam.y = cy <= 0 ? cy / 2 : clamp(game.player.y - H / 2, 0, cy);
+                }
                 draw(ctx);
                 requestAnimationFrame(gameLoop);
             }
@@ -845,7 +857,7 @@
             }
             window.addEventListener('keydown', (e) => {
                 if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')) return;
-                if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+                if (e.key === 'p' || e.key === 'P' || e.key === 'Escape' || e.key === ' ') {
                     if (game.state !== 'playing') return;
                     dbg.pauseGame = !dbg.pauseGame;
                     btnPause.innerHTML = dbg.pauseGame ? ICONS.play : ICONS.pause;
