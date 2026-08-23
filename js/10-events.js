@@ -183,8 +183,10 @@
                 if (t > 100 && Math.random() < 0.15) typeKey = 'brute';
                 const diffBonus = game.difficultyLevel - 1;
                 const ne = new Enemy(x, y, typeKey, diffBonus);
-                // ===== 不可能模式专属：敌人词缀系统（普通小怪 25% 概率携带一条） =====
-                if (game.selectedDifficulty === 'impossible' && !ne.isBoss && Math.random() < 0.25) {
+                // ===== 词缀系统（默认仅不可能模式，普通小怪 25% 概率携带一条；debug 可覆盖概率/难度限制） =====
+                const affixAllowed = dbg.affixAnywhere ? true : game.selectedDifficulty === 'impossible';
+                const affixChance = (dbg.affixChance !== undefined && dbg.affixChance !== null) ? dbg.affixChance : 0.25;
+                if (affixAllowed && !ne.isBoss && Math.random() < affixChance) {
                     const AFFIXES = [
                         { name: '迅捷', color: '#55ddff', apply: (e) => { e.speed *= 1.35; } },
                         { name: '坚韧', color: '#dddddd', apply: (e) => { e.hp = Math.floor(e.hp * 1.6); e.maxHp = e.hp; } },

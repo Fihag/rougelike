@@ -840,7 +840,7 @@
                     const maxLv = r.maxLevel || 1;
                     const active = isRelicActive(r.id);
                     const item = document.createElement('div');
-                    item.className = 'meta-item';
+                    item.className = 'meta-item relic-card';
                     item.classList.toggle('relic-off', lv > 0 && !active);
                     const info = document.createElement('div');
                     info.className = 'mi-info';
@@ -852,6 +852,9 @@
                     desc.textContent = typeof r.desc === 'function' ? r.desc(Math.max(1, lv)) : r.desc;
                     info.appendChild(name); info.appendChild(desc);
                     item.appendChild(info);
+                    // 按钮行：购买/升级 + 穿戴切换（卡片纵向布局，避免长文案挤压名称）
+                    const btnrow = document.createElement('div');
+                    btnrow.className = 'meta-btnrow';
                     const btn = document.createElement('button');
                     if (lv >= maxLv) {
                         btn.textContent = maxLv > 1 ? '已满级' : '已拥有';
@@ -872,7 +875,7 @@
                             }
                         });
                     }
-                    item.appendChild(btn);
+                    btnrow.appendChild(btn);
                     // 穿戴/卸下切换（仅已拥有圣物）
                     if (lv > 0) {
                         const tog = document.createElement('button');
@@ -883,8 +886,9 @@
                             renderMetaPanel();
                             syncDeathMarkUI();
                         });
-                        item.appendChild(tog);
+                        btnrow.appendChild(tog);
                     }
+                    item.appendChild(btnrow);
                     metaList.appendChild(item);
                 }
             }

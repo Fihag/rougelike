@@ -350,6 +350,10 @@
         }
         .meta-item .meta-toggle:hover { border-color: var(--orange-deep); color: var(--orange-deep); }
         .meta-item.relic-off { opacity: 0.72; }
+        /* 圣物卡片：信息在上、按钮行在下（避免长按钮文字挤压名称竖排） */
+        .meta-item.relic-card { flex-direction: column; align-items: stretch; gap: 8px; }
+        .meta-item .meta-btnrow { display: flex; gap: 8px; }
+        .meta-item .meta-btnrow button { flex: 1; }
 
         /* ===== 触屏模式：加大触击区域 ===== */
 .touch-mode #ui-buttons button { width: 46px; height: 46px; font-size: 20px; }
