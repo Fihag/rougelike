@@ -4,7 +4,7 @@
                     this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.damage = damage;
                     this.splashRadius = splashRadius; this.splashDamagePercent = splashDamagePercent;
                     this.color = color; this.size = size; this.alive = true;
-                    this.trailPositions = []; this.lifetime = 0; this.maxLifetime = isEnemy ? 4 : 3;
+                    this.trailPositions = []; this.lifetime = 0; this.maxLifetime = isEnemy ? 8 : 3;
                     this.isEnemy = isEnemy;
                 }
                 update(dt) {
@@ -14,7 +14,7 @@
                     for (const tp of this.trailPositions) tp.life -= dt;
                     this.trailPositions = this.trailPositions.filter(tp => tp.life > 0);
                     this.x += this.vx * dt; this.y += this.vy * dt;
-                    if (this.x < -30 || this.x > WORLD_W + 30 || this.y < -30 || this.y > WORLD_H + 30) this.alive = false;
+                    if (this.x < -120 || this.x > WORLD_W + 120 || this.y < -120 || this.y > WORLD_H + 120) this.alive = false;
                 }
                 draw(ctx) {
                     if (this.isEnemy) {

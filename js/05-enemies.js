@@ -9,7 +9,7 @@
                 hatchling:  { name: '巢穴幼体', hp: 25, speed: 135, size: 8, color: '#a8e063', xpValue: 12, damage: 9, shape: 'circle' },
                 broodmother: { name: '虫巢母皇', hp: 2300, speed: 42, size: 30, color: '#7cbf4d', xpValue: 200, damage: 30, shape: 'circle', isBoss: true, shieldBase: 850, slashDamage: 0, slashSpeed: 0, slashCooldown: 6, chargeTime: 0.9, summonType: 'hatchling', summonInterval: 3.5, summonCount: 3, auraColor: 'rgba(120,200,80,0.6)', scale: { hpRate: 0.30, shieldRate: 0.25, shieldRate3: 0.30, contactRate: 0.06, acidRate: 0.20, speedRate: 0.40, speedCap: 3 } },
                 assassin:  { name: '暗影刺客', hp: 1300, speed: 135, size: 20, color: '#5a2a7a', xpValue: 200, damage: 30, shape: 'triangle', isBoss: true, shieldBase: 1050, slashDamage: 30, slashSpeed: 290, slashCooldown: 3.5, chargeTime: 0.9, shurikenDamage: 20, shurikenSpeed: 270, shurikenCount: 6, shurikenInterval: 7, auraColor: 'rgba(120,60,190,0.6)', scale: { hpRate: 0.20, shieldRate: 0.25, slashRate: 0.25, speedRate: 0.35, speedCap: 3 } },
-                lavabeast: { name: '熔岩巨兽', hp: 3000, speed: 125, size: 34, color: '#8a2b08', xpValue: 240, damage: 34, shape: 'circle', isBoss: true, shieldBase: 1300, slashDamage: 26, slashSpeed: 240, slashCooldown: 5.5, chargeTime: 0.9, summonType: 'lavaling', summonInterval: 8, summonCount: 3, auraColor: 'rgba(255,90,20,0.65)', scale: { hpRate: 0.32, shieldRate: 0.28, contactRate: 0.06, slashRate: 0.22, speedRate: 0.35, speedCap: 3 } },
+                lavabeast: { name: '熔岩巨兽', hp: 3000, speed: 135, size: 34, color: '#8a2b08', xpValue: 240, damage: 34, shape: 'circle', isBoss: true, shieldBase: 1300, slashDamage: 26, slashSpeed: 240, slashCooldown: 5.5, chargeTime: 0.9, summonType: 'lavaling', summonInterval: 8, summonCount: 3, auraColor: 'rgba(255,90,20,0.65)', scale: { hpRate: 0.32, shieldRate: 0.28, contactRate: 0.06, slashRate: 0.22, speedRate: 0.35, speedCap: 3 } },
                 lavaling:  { name: '熔岩幼体', hp: 18, speed: 95, size: 9, color: '#ff6622', xpValue: 10, damage: 6, shape: 'circle', isGhost: true, slowAmount: 0.35, slowDuration: 1.5, dotDamage: 2, dotDuration: 2 }
             };
 
@@ -223,6 +223,18 @@
                         // 熔岩巨兽两段式死亡：首次致死先进入濒死爆燃演出（期间免伤），演出结束才真正死亡并掉落奖励
                         if (this.typeKey === 'lavabeast' && !this.dying) { this.enterLavaDeath(); return; }
                         this.alive = false; game.kills++; game.score += this.xpValue;
+                        // 熔岩巨兽专属：死亡新星 360° 大量弹幕同时迸发（四环 256 发）
+                        if (this.typeKey === 'lavabeast') {
+                            const novaColors = ['#ff9944', '#ffcc55', '#ff7722', '#ffcc66'];
+                            for (let ring = 0; ring < 4; ring++) {
+                                const n = 64, spd = 160 + ring * 70;
+                                for (let i = 0; i < n; i++) {
+                                    const na = (Math.PI * 2 / n) * i + ring * (Math.PI / n) + rand(0, 0.1);
+                                    game.projectiles.push(new Projectile(this.x, this.y, Math.cos(na) * spd, Math.sin(na) * spd, this.lavaDmg, 0, 0, novaColors[ring], 7, true));
+                                }
+                            }
+                            triggerShake(6, 0.3);
+                        }
                         // Boss 击杀计数（用于超级Boss召唤）
                         if (this.isBoss && !this.isSuperBoss) game.bossKilledCount++;
                         // 灵魂碎片改为结算时按整体击杀数计算（见死亡结算处），此处不再累加
@@ -360,9 +372,11 @@
                         this.deathBurstTimer -= dt;
                         if (this.deathBurstTimer <= 0) {
                             this.deathBurstTimer = 0.32;
-                            for (let i = 0; i < 3; i++) {
-                                const ba = rand(0, Math.PI * 2);
-                                game.projectiles.push(new Projectile(this.x, this.y, Math.cos(ba) * rand(120, 220), Math.sin(ba) * rand(120, 220), this.lavaDmg, 0, 0, '#ff7722', 7, true));
+                            // 360° 环形螺旋弹幕（每跳 16 发，随演出旋转）
+                            const ringN = 16;
+                            for (let i = 0; i < ringN; i++) {
+                                const ba = (Math.PI * 2 / ringN) * i + this.deathTimer * 2;
+                                game.projectiles.push(new Projectile(this.x, this.y, Math.cos(ba) * rand(140, 240), Math.sin(ba) * rand(140, 240), this.lavaDmg, 0, 0, '#ff7722', 9, true));
                             }
                             if (game.fireZones.length < 40) game.fireZones.push({ x: clamp(this.x + rand(-70, 70), 25, WORLD_W - 25), y: clamp(this.y + rand(-70, 70), 25, WORLD_H - 25), radius: rand(42, 68), damage: this.lavaPoolDmg, remaining: 3, tickRate: 0.5, tickTimer: 0, rgb: '255,120,40' });
                             spawnParticles(this.x + rand(-18, 18), this.y + rand(-18, 18), 10, '#ff8833', 130, 0.5, 5);
@@ -388,7 +402,7 @@
                             // 落地追加径向火弹（封堵逃离）
                             for (let i = 0; i < 10; i++) {
                                 const ra = (Math.PI * 2 / 10) * i;
-                                game.projectiles.push(new Projectile(this.x, this.y, Math.cos(ra) * 230, Math.sin(ra) * 230, this.lavaDmg, 0, 0, '#ff9944', 6, true));
+                                game.projectiles.push(new Projectile(this.x, this.y, Math.cos(ra) * 230, Math.sin(ra) * 230, this.lavaDmg, 0, 0, '#ff9944', 8, true));
                             }
                             triggerShake(7, 0.35);
                             sound.play('explosion');
@@ -410,7 +424,7 @@
                         this.lavaChargeDx = Math.cos(ca); this.lavaChargeDy = Math.sin(ca);
                         if (this.lavaChargeT <= 0) {
                             this.lavaChargeState = 'dash';
-                            this.lavaChargeT = 0.65;
+                            this.lavaChargeT = 0.75;
                             this.lavaChargeHit = false;
                             sound.play('explosion');
                         }
@@ -419,8 +433,8 @@
                     if (this.lavaChargeState === 'dash') {
                         this.lavaChargeT -= dt;
                         const oldX = this.x, oldY = this.y;
-                        this.x = clamp(this.x + this.lavaChargeDx * 560 * dt, this.size, WORLD_W - this.size);
-                        this.y = clamp(this.y + this.lavaChargeDy * 560 * dt, this.size, WORLD_H - this.size);
+                        this.x = clamp(this.x + this.lavaChargeDx * 620 * dt, this.size, WORLD_W - this.size);
+                        this.y = clamp(this.y + this.lavaChargeDy * 620 * dt, this.size, WORLD_H - this.size);
                         if (Math.random() < 0.6) spawnParticles(this.x, this.y, 2, '#ff7722', 40, 0.3, 3);
                         // 撞到玩家：剑气伤害 + 击退
                         if (!this.lavaChargeHit && dist(this, player) < this.size + player.size + 4) {
@@ -468,7 +482,7 @@
                             if (this.lavaHarrassTimer <= 0) {
                                 this.lavaHarrassTimer = this.enraged ? 0.3 : 0.45;
                                 const ha = Math.atan2(player.y - this.y, player.x - this.x) + rand(-0.12, 0.12);
-                                game.projectiles.push(new Projectile(this.x, this.y, Math.cos(ha) * 300, Math.sin(ha) * 300, Math.max(1, Math.floor(this.lavaDmg * 0.6)), 0, 0, '#ffaa55', 5, true));
+                                game.projectiles.push(new Projectile(this.x, this.y, Math.cos(ha) * 300, Math.sin(ha) * 300, Math.max(1, Math.floor(this.lavaDmg * 0.6)), 0, 0, '#ffaa55', 7, true));
                             }
                             // 技能：炽热冲锋（拉近距离，反放风筝）
                             this.lavaChargeTimer -= dt;
@@ -492,7 +506,7 @@
                                 const n = this.enraged ? 24 : 20;
                                 for (let i = 0; i < n; i++) {
                                     const a = (Math.PI * 2 / n) * i + rand(0, 0.4);
-                                    game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * 260, Math.sin(a) * 260, this.lavaDmg, 0, 0, i % 2 ? '#ff7722' : '#ffaa33', 7, true));
+                                    game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * 260, Math.sin(a) * 260, this.lavaDmg, 0, 0, i % 2 ? '#ff7722' : '#ffaa33', 9, true));
                                 }
                                 spawnParticles(this.x, this.y, 18, '#ff8833', 120, 0.5, 5);
                                 sound.play('explosion');
@@ -513,7 +527,7 @@
                                     const spread = 0.55;
                                     for (let i = 0; i < 6; i++) {
                                         const a = baseA - spread / 2 + (spread / 5) * i;
-                                        game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * 270, Math.sin(a) * 270, this.lavaDmg, 0, 0, '#ff9944', 6, true));
+                                        game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * 270, Math.sin(a) * 270, this.lavaDmg, 0, 0, '#ff9944', 8, true));
                                     }
                                 }
                             }
