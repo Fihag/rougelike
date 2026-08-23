@@ -211,7 +211,7 @@
             // ==================== 伤害数字 ====================
             class DamageNumber {
                 constructor(x, y, value, color = '#fff') {
-                    this.x = x; this.y = y; this.value = Math.round(value); this.color = color;
+                    this.x = x; this.y = y; this.value = typeof value === 'number' ? Math.round(value) : value; this.color = color;
                     this.life = 0.7; this.maxLife = 0.7; this.vy = -60; this.alive = true;
                 }
                 update(dt) {

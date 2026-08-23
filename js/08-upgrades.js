@@ -155,6 +155,13 @@
                 game.player.relicThorn = isRelicActive('relic_thorn');
                 game.player.relicGreed = isRelicActive('relic_greed');
                 game.player.relicBomb = isRelicActive('relic_bomb');
+                // 幻影步：受击闪避概率随圣物等级
+                const phantomLv = isRelicActive('relic_phantom_step') ? relicLevel('relic_phantom_step') : 0;
+                const phantomDef = META_RELICS.find(x => x.id === 'relic_phantom_step');
+                game.player.relicDodgeChance = (phantomLv > 0 && phantomDef) ? phantomDef.rate[phantomLv - 1] : 0;
+                // 影子分身 / 时停领域（计时状态挂在 game 上）
+                game.player.relicClone = isRelicActive('relic_shadow_clone');
+                game.player.relicTimeStop = isRelicActive('relic_time_stop');
                 // 开局护盾圣物（可升级，仅穿戴生效）：采用灵魂护盾机制，护盾量/恢复时间随等级成长
                 const shieldLv = isRelicActive('relic_shield_start') ? relicLevel('relic_shield_start') : 0;
                 if (shieldLv > 0) {
@@ -170,6 +177,13 @@
                 game.chests = [];
                 game.bombTimer = 0;
                 game.altars = []; game.altarTimer = 45;
+                // 影子分身/时停领域计时器复位（时停首次触发按当前圣物等级间隔）
+                game.cloneTimer = 1.5; game.cloneAngle = 0; game.cloneX = undefined; game.cloneY = undefined;
+                if (game.player.relicTimeStop) {
+                    const tsLv = relicLevel('relic_time_stop');
+                    const tsDef = META_RELICS.find(x => x.id === 'relic_time_stop');
+                    game.timeStopTimer = (tsDef && tsLv > 0) ? tsDef.rate[tsLv - 1] : 45;
+                } else { game.timeStopTimer = 0; }
                 game.superBossSpawned = false; game.bossKilledCount = 0;
                 game.achievements = {};
                 game.enemies = []; game.projectiles = []; game.experienceOrbs = [];

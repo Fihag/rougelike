@@ -264,6 +264,52 @@
                             }
                         }
                     }
+                    // 影子分身：环绕玩家旋转，按圣物等级间隔向最近敌人发射暗影弹
+                    if (player.relicClone) {
+                        const cLv = relicLevel('relic_shadow_clone');
+                        const cDef = META_RELICS.find(x => x.id === 'relic_shadow_clone');
+                        const cInt = (cDef && cLv > 0) ? cDef.rate[cLv - 1] : 2.0;
+                        game.cloneAngle = (game.cloneAngle || 0) + cappedDt * 2;
+                        const cr = player.size + 30;
+                        game.cloneX = player.x + Math.cos(game.cloneAngle) * cr;
+                        game.cloneY = player.y + Math.sin(game.cloneAngle) * cr;
+                        game.cloneTimer = (game.cloneTimer === undefined ? cInt : game.cloneTimer) - cappedDt;
+                        if (game.cloneTimer <= 0) {
+                            const target = player.getNearestEnemy();
+                            if (target) {
+                                game.cloneTimer = cInt;
+                                const ang = Math.atan2(target.y - game.cloneY, target.x - game.cloneX);
+                                const spd = 320;
+                                const dmg = (12 + player.level * 2) * (player.globalDamageMultiplier || 1) * player.getRiskMult() * player.getLowHpMult();
+                                game.projectiles.push(new Projectile(game.cloneX, game.cloneY, Math.cos(ang) * spd, Math.sin(ang) * spd, dmg, 0, 0, '#b06cff', 4));
+                                sound.play('shoot');
+                            } else {
+                                game.cloneTimer = 0; // 无目标保持待发，出现敌人立刻射击
+                            }
+                        }
+                    }
+                    // 时停领域：周期冻结全场敌人（含 Boss）2 秒
+                    if (player.relicTimeStop) {
+                        game.timeStopTimer -= cappedDt;
+                        if (game.timeStopTimer <= 0) {
+                            const tLv = relicLevel('relic_time_stop');
+                            const tDef = META_RELICS.find(x => x.id === 'relic_time_stop');
+                            game.timeStopTimer = (tDef && tLv > 0) ? tDef.rate[tLv - 1] : 45;
+                            let frozen = 0;
+                            for (const e of game.enemies) {
+                                if (!e.alive || e.deathMarked) continue;
+                                e.freezeTimer = Math.max(e.freezeTimer || 0, 2);
+                                frozen++;
+                            }
+                            if (frozen > 0) {
+                                game.warningText = '时停领域！全场敌人冻结 2 秒';
+                                game.warningTimer = 1.5;
+                                triggerShake(3, 0.25);
+                                sound.play('shield');
+                                game.rings.push({ x: player.x, y: player.y, r: 20, maxR: Math.max(WORLD_W, WORLD_H), life: 0.6, maxLife: 0.6, color: '#88ddff', width: 6 });
+                            }
+                        }
+                    }
                     // 祭坛/传送门：45 秒刷新一次，触碰触发
                     game.altarTimer -= cappedDt;
                     if (game.altarTimer <= 0 && game.altars.length === 0) {
@@ -445,6 +491,20 @@
                     for (const enemy of game.enemies) {
                         if (enemy.deathMarked) drawDeathMark(ctx, enemy);
                     }
+                }
+                // 影子分身绘制（半透明暗紫灵体，随玩家移动呼吸浮动）
+                if (game.player && game.player.relicClone && game.cloneX !== undefined) {
+                    const bob = Math.sin(game.time * 5) * 2;
+                    const cx = game.cloneX, cy = game.cloneY + bob;
+                    ctx.globalAlpha = 0.55;
+                    ctx.fillStyle = '#3a2060';
+                    ctx.beginPath(); ctx.arc(cx, cy, 9, 0, Math.PI * 2); ctx.fill();
+                    ctx.globalAlpha = 0.85;
+                    ctx.strokeStyle = '#b06cff'; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.arc(cx, cy, 9, 0, Math.PI * 2); ctx.stroke();
+                    ctx.fillStyle = '#d8b0ff';
+                    ctx.fillRect(cx - 4, cy - 3, 2.5, 2.5); ctx.fillRect(cx + 1.5, cy - 3, 2.5, 2.5);
+                    ctx.globalAlpha = 1;
                 }
                 if (game.player) game.player.draw(ctx);
                 if (game.player) drawWeaponsVisuals(game.player, ctx);

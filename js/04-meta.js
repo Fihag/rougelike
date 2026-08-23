@@ -17,6 +17,12 @@
                 { id: 'relic_shard_boost', name: '财富之心', desc: '每局结算的灵魂碎片 ×1.2', icon: 'coins', cost: 650 },
                 { id: 'relic_last_stand', name: '背水一战', icon: 'trending-up', cost: 300, maxLevel: 3, upgradeCost: 400, rate: [0.25, 0.35, 0.45],
                     desc: (lv) => '生命每损失 1%，伤害 +' + [0.25, 0.35, 0.45][lv - 1] + '%（满血无加成，血量越低伤害越高；每级+0.10%）' },
+                { id: 'relic_phantom_step', name: '幻影步', icon: 'wind', cost: 360, maxLevel: 2, upgradeCost: 480, rate: [0.15, 0.25],
+                    desc: (lv) => '受到伤害时有 ' + Math.round([0.15, 0.25][lv - 1] * 100) + '% 概率完全闪避（持续伤害不可闪避；每级+10%）' },
+                { id: 'relic_shadow_clone', name: '影子分身', icon: 'ghost', cost: 450, maxLevel: 3, upgradeCost: 550, rate: [2.0, 1.5, 1.1],
+                    desc: (lv) => '召唤暗影分身环绕自身，每 ' + [2.0, 1.5, 1.1][lv - 1] + ' 秒向最近的敌人发射暗影弹（伤害随人物等级成长；升级缩短射击间隔）' },
+                { id: 'relic_time_stop', name: '时停领域', icon: 'clock', cost: 520, maxLevel: 3, upgradeCost: 640, rate: [45, 35, 25],
+                    desc: (lv) => '每隔 ' + [45, 35, 25][lv - 1] + ' 秒冻结全场所有敌人 2 秒（含 Boss；升级缩短触发间隔）' },
                 { id: 'relic_deathmark', name: '死神之指', desc: '解锁死神之指：标记目标并抹杀（手动可标记 Boss）', icon: 'skull', cost: 5999 }
             ];
             // ===== 成就系统（局外碎片奖励） =====

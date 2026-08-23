@@ -31,6 +31,7 @@
                     this.invincibleTimer = 0; this.flashTimer = 0; this.shieldFlash = 0;
                     this.oneShotShield = false; this.burstTimer = 0;
                     this.revengeTimer = 0;
+                    this.relicDodgeChance = 0;
                     this.slowTimer = 0; this.slowAmount = 0;
                     this.dotEffects = [];
                     this.weapons = [
@@ -55,6 +56,15 @@
 
                 takeDamage(amount, sourceType = 'default', ignoreInvincible = false) {
                     if (this.invincibleTimer > 0 && !ignoreInvincible) return;
+                    // 幻影步圣物：概率完全闪避（持续伤害真伤不可闪避）
+                    if (!ignoreInvincible && this.relicDodgeChance > 0 && Math.random() < this.relicDodgeChance) {
+                        spawnDamageNumber(this.x, this.y - 15, '闪避', '#88ffcc');
+                        spawnParticles(this.x, this.y, 10, '#aaffdd', 90, 0.4, 3);
+                        sound.play('shield');
+                        this.invincibleTimer = 0.4;
+                        this.flashTimer = 0.2;
+                        return;
+                    }
                     // 宝箱一次性护盾：抵挡一次伤害
                     if (this.oneShotShield && amount > 0) {
                         this.oneShotShield = false;
