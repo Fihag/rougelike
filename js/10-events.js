@@ -182,7 +182,22 @@
                 if (t > 80 && Math.random() < 0.3) typeKey = 'runner';
                 if (t > 100 && Math.random() < 0.15) typeKey = 'brute';
                 const diffBonus = game.difficultyLevel - 1;
-                game.enemies.push(new Enemy(x, y, typeKey, diffBonus));
+                const ne = new Enemy(x, y, typeKey, diffBonus);
+                // ===== 不可能模式专属：敌人词缀系统（普通小怪 25% 概率携带一条） =====
+                if (game.selectedDifficulty === 'impossible' && !ne.isBoss && Math.random() < 0.25) {
+                    const AFFIXES = [
+                        { name: '迅捷', color: '#55ddff', apply: (e) => { e.speed *= 1.35; } },
+                        { name: '坚韧', color: '#dddddd', apply: (e) => { e.hp = Math.floor(e.hp * 1.6); e.maxHp = e.hp; } },
+                        { name: '爆裂', color: '#ff8833', apply: (e) => { e.affixBurst = true; } },
+                        { name: '灼热', color: '#ff4444', apply: (e) => { e.affixBurn = true; } },
+                        { name: '嗜血', color: '#55cc66', apply: (e) => { e.affixLeech = true; } }
+                    ];
+                    const af = AFFIXES[randInt(0, AFFIXES.length - 1)];
+                    af.apply(ne);
+                    ne.affixName = af.name;
+                    ne.affixColor = af.color;
+                }
+                game.enemies.push(ne);
             }
 
             function spawnBoss() {
@@ -193,8 +208,15 @@
                 let x = spot.x, y = spot.y;
                 game.bossAppearedCount++;
                 const diffBonus = game.difficultyLevel - 1;
-                const bossTypes = ['boss', 'broodmother', 'assassin'];
-                const bossType = bossTypes[Math.floor(Math.random() * bossTypes.length)];
+                // 炼狱/不可能模式特供：熔岩巨兽固定 40% 出场率，其余三 Boss 平分剩余 60%
+                const selDiff = DIFFICULTIES[game.selectedDifficulty] ? game.selectedDifficulty : 'normal';
+                let bossType;
+                if ((selDiff === 'hell' || selDiff === 'impossible') && Math.random() < 0.4) {
+                    bossType = 'lavabeast';
+                } else {
+                    const bossTypes = ['boss', 'broodmother', 'assassin'];
+                    bossType = bossTypes[Math.floor(Math.random() * bossTypes.length)];
+                }
                 const boss = new Enemy(x, y, bossType, diffBonus);
                 game.enemies.push(boss);
                 game.bossOnField = true;
@@ -207,6 +229,12 @@
                 spawnFx(x, y, 16, '#ff4444', { shape: 'star', glow: true, speed: 150, life: 0.7, size: 6 });
                 spawnFx(x, y, 20, '#7a7a7a', { speed: 70, life: 0.9, size: 7, gravity: 140, drag: 1.5 });
                 game.flashWhite = 0.28;
+                // 熔岩巨兽专属降临特效（熔岩色）
+                if (bossType === 'lavabeast') {
+                    spawnParticles(x, y, 26, '#ff7722', 130, 0.8, 6);
+                    spawnFx(x, y, 18, '#ffaa33', { shape: 'star', glow: true, speed: 160, life: 0.7, size: 6 });
+                    game.rings.push({ x: x, y: y, r: 10, maxR: 260, life: 0.5, maxLife: 0.5, color: '#ff8833', width: 7 });
+                }
                 game.rings.push({ x: x, y: y, r: 12, maxR: 300, life: 0.55, maxLife: 0.55, color: '#ff4444', width: 7 });
                 game.rings.push({ x: x, y: y, r: 6, maxR: 220, life: 0.4, maxLife: 0.4, color: '#ffffff', width: 3 });
             }

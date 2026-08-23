@@ -8,7 +8,9 @@
                 boss:     { name: '死神骑士', hp: 1750, speed: 52, size: 26, color: '#4a0044', xpValue: 200, damage: 32, shape: 'square', isBoss: true, shieldBase: 850, slashDamage: 18, slashSpeed: 210, slashCooldown: 6, chargeTime: 0.9, shockwaveDamage: 18, scale: { hpRate: 0.35, shieldRate: 0.30, contactRate: 0.06, slashRate: 0.20, shockwaveRate: 0.15, speedRate: 0.40, speedCap: 3 } },
                 hatchling:  { name: '巢穴幼体', hp: 25, speed: 135, size: 8, color: '#a8e063', xpValue: 12, damage: 9, shape: 'circle' },
                 broodmother: { name: '虫巢母皇', hp: 2300, speed: 42, size: 30, color: '#7cbf4d', xpValue: 200, damage: 30, shape: 'circle', isBoss: true, shieldBase: 850, slashDamage: 0, slashSpeed: 0, slashCooldown: 6, chargeTime: 0.9, summonType: 'hatchling', summonInterval: 3.5, summonCount: 3, auraColor: 'rgba(120,200,80,0.6)', scale: { hpRate: 0.30, shieldRate: 0.25, shieldRate3: 0.30, contactRate: 0.06, acidRate: 0.20, speedRate: 0.40, speedCap: 3 } },
-                assassin:  { name: '暗影刺客', hp: 1300, speed: 100, size: 20, color: '#5a2a7a', xpValue: 200, damage: 30, shape: 'triangle', isBoss: true, shieldBase: 1050, slashDamage: 30, slashSpeed: 290, slashCooldown: 3.5, chargeTime: 0.9, shurikenDamage: 20, shurikenSpeed: 270, shurikenCount: 6, shurikenInterval: 7, auraColor: 'rgba(120,60,190,0.6)', scale: { hpRate: 0.20, shieldRate: 0.25, slashRate: 0.25, speedRate: 0.35, speedCap: 3 } }
+                assassin:  { name: '暗影刺客', hp: 1300, speed: 135, size: 20, color: '#5a2a7a', xpValue: 200, damage: 30, shape: 'triangle', isBoss: true, shieldBase: 1050, slashDamage: 30, slashSpeed: 290, slashCooldown: 3.5, chargeTime: 0.9, shurikenDamage: 20, shurikenSpeed: 270, shurikenCount: 6, shurikenInterval: 7, auraColor: 'rgba(120,60,190,0.6)', scale: { hpRate: 0.20, shieldRate: 0.25, slashRate: 0.25, speedRate: 0.35, speedCap: 3 } },
+                lavabeast: { name: '熔岩巨兽', hp: 2800, speed: 100, size: 34, color: '#8a2b08', xpValue: 240, damage: 34, shape: 'circle', isBoss: true, shieldBase: 1300, slashDamage: 26, slashSpeed: 240, slashCooldown: 5.5, chargeTime: 0.9, summonType: 'lavaling', summonInterval: 10, summonCount: 2, auraColor: 'rgba(255,90,20,0.65)', scale: { hpRate: 0.32, shieldRate: 0.28, contactRate: 0.06, slashRate: 0.22, speedRate: 0.35, speedCap: 3 } },
+                lavaling:  { name: '熔岩幼体', hp: 18, speed: 95, size: 9, color: '#ff6622', xpValue: 10, damage: 6, shape: 'circle', isGhost: true, slowAmount: 0.35, slowDuration: 1.5, dotDamage: 2, dotDuration: 2 }
             };
 
             
@@ -35,6 +37,8 @@
                     if (isBoss && sc) {
                         this.hp = Math.floor(def.hp * grow(sc.hpRate) * (k >= 7 ? 1.2 : 1));
                         this.speed = Math.min(def.speed * grow(sc.speedRate, sc.speedCap || 6), def.speed * 1.5);
+                        // 熔岩巨兽：移速成长上限 1.8 倍（100→180）
+                        if (this.typeKey === 'lavabeast') this.speed = Math.min(def.speed * grow(sc.speedRate, sc.speedCap || 6), def.speed * 1.8);
                         this.damage = Math.floor(def.damage * grow(sc.contactRate));
                     } else {
                         const hpBonus = 1 + difficultyBonus * 0.15;
@@ -90,6 +94,8 @@
                             this.damageReduction = game.bossAppearedCount >= 3 ? 0.20 : 0.15;
                         } else if (this.typeKey === 'assassin') {
                             this.damageReduction = 0.35;
+                        } else if (this.typeKey === 'lavabeast') {
+                            this.damageReduction = 0.25;
                         } else {
                             this.damageReduction = 0;
                         }
@@ -129,6 +135,28 @@
                         this.shurikenCount = def.shurikenCount || 6;
                         this.shurikenInterval = def.shurikenInterval || 7;
                         this.shurikenTimer = 3;
+                        // ===== 熔岩巨兽技能组（伤害中低、频率高；全部吃 grow/diffMult 成长） =====
+                        if (this.typeKey === 'lavabeast') {
+                            this.lavaBarrageTimer = 4;      // 熔岩弹幕
+                            this.lavaBarrageInterval = 5.5;
+                            this.lavaEruptTimer = 6;        // 熔岩喷发
+                            this.lavaEruptInterval = 6.5;
+                            this.lavaLeapTimer = 8;         // 震地跃击
+                            this.lavaLeapInterval = 9;
+                            this.lavaHardenTimer = 11;      // 熔火硬化
+                            this.lavaHardenInterval = 11;
+                            this.hardened = 0;              // 硬化剩余时间（石化停驻）
+                            this.leaping = false;           // 滞空免伤中
+                            this.leapWarnX = 0; this.leapWarnY = 0;
+                            this.enraged = false;           // 狂暴(<40%)
+                            this.trailTimer = 0;            // 火焰足迹节流
+                            this.dying = false;             // 两段式死亡演出中
+                            this.deathTimer = 0; this.deathBurstTimer = 0;
+                            this.lavaDmg = Math.floor(14 * grow(sc.slashRate));       // 弹幕单发
+                            this.lavaPoolDmg = Math.floor(10 * grow(sc.slashRate));   // 火区每跳
+                            this.lavaEruptDmg = Math.floor(16 * grow(sc.slashRate));  // 喷发触伤
+                            this.lavaLeapDmg = Math.floor(22 * grow(sc.slashRate));   // 落地震伤
+                        }
                     }
                     // ===== 难度倍率 =====
                     const dm = game.diffMult || 1;
@@ -147,6 +175,10 @@
                 takeDamage(amount, sourceType = 'default', trueDamage = false, noNumber = false) {
                     // ===== 死亡标记锁定：无法造成伤害 =====
                     if (this.deathMarked && !trueDamage) return;
+                    // ===== 熔岩巨兽濒死演出中：完全免伤（演出结束的终结调用走真伤通道） =====
+                    if (this.dying && !trueDamage) return;
+                    // ===== 震地跃击滞空：免伤 =====
+                    if (this.leaping && !trueDamage) return;
                     // ===== 护盾吸收（真伤无视） =====
                     if (this.isBoss && this.invincible && !trueDamage) {
                         if (this.shieldHp > 0) {
@@ -178,6 +210,8 @@
                     }
                     if (!noNumber) spawnDamageNumber(this.x, this.y - this.size, amount, sourceType === 'frost' ? '#aaddff' : '#ffffff');
                     if (this.hp <= 0) {
+                        // 熔岩巨兽两段式死亡：首次致死先进入濒死爆燃演出（期间免伤），演出结束才真正死亡并掉落奖励
+                        if (this.typeKey === 'lavabeast' && !this.dying) { this.enterLavaDeath(); return; }
                         this.alive = false; game.kills++; game.score += this.xpValue;
                         // Boss 击杀计数（用于超级Boss召唤）
                         if (this.isBoss && !this.isSuperBoss) game.bossKilledCount++;
@@ -207,6 +241,13 @@
                                 }
                             }
                             spawnParticles(this.x, this.y, 15, '#ff8844', 80, 0.4, 4);
+                        }
+                        // 爆裂词缀（不可能模式）：死亡时波及玩家
+                        if (this.affixBurst && game.player && game.player.hp > 0) {
+                            const pd = Math.hypot(game.player.x - this.x, game.player.y - this.y);
+                            if (pd < 70 + game.player.size) game.player.takeDamage(Math.max(6, Math.floor(this.damage * 1.2)));
+                            sound.play('explosion');
+                            spawnParticles(this.x, this.y, 14, '#ff8833', 110, 0.45, 4);
                         }
                         // 经验球价值随难度增长（每级 +5%，上限 +100%），缓解后期升级停滞
                         const expBonus = 1 + 0.05 * Math.min(Math.max(0, game.difficultyLevel - 1), 20);
@@ -303,6 +344,49 @@
                     }
                     if (this.deathMarked) { return; }
                     if (this.freezeTimer > 0) { this.freezeTimer -= dt; return; }
+                    // ===== 熔岩巨兽：两段式死亡演出（连续爆燃+熔岩池，结束才真正死亡结算） =====
+                    if (this.dying) {
+                        this.deathTimer -= dt;
+                        this.deathBurstTimer -= dt;
+                        if (this.deathBurstTimer <= 0) {
+                            this.deathBurstTimer = 0.32;
+                            for (let i = 0; i < 3; i++) {
+                                const ba = rand(0, Math.PI * 2);
+                                game.projectiles.push(new Projectile(this.x, this.y, Math.cos(ba) * rand(120, 220), Math.sin(ba) * rand(120, 220), this.lavaDmg, 0, 0, '#ff7722', 7, true));
+                            }
+                            if (game.fireZones.length < 40) game.fireZones.push({ x: clamp(this.x + rand(-70, 70), 25, WORLD_W - 25), y: clamp(this.y + rand(-70, 70), 25, WORLD_H - 25), radius: rand(42, 68), damage: this.lavaPoolDmg, remaining: 3, tickRate: 0.5, tickTimer: 0, rgb: '255,120,40' });
+                            spawnParticles(this.x + rand(-18, 18), this.y + rand(-18, 18), 10, '#ff8833', 130, 0.5, 5);
+                            triggerShake(4, 0.15);
+                            sound.play('explosion');
+                        }
+                        if (this.deathTimer <= 0) {
+                            // 演出结束：真伤通道重入死亡结算（经验/掉落/计数）
+                            this.takeDamage(9999999, 'lavaDeath', true, true);
+                        }
+                        return;
+                    }
+                    // ===== 熔岩巨兽：震地跃击滞空（免伤，落点预警后砸落） =====
+                    if (this.leaping) {
+                        this.leapT -= dt;
+                        if (this.leapT <= 0) {
+                            this.leaping = false;
+                            this.x = clamp(this.leapWarnX, this.size, WORLD_W - this.size);
+                            this.y = clamp(this.leapWarnY, this.size, WORLD_H - this.size);
+                            game.rings.push({ x: this.x, y: this.y, r: 14, maxR: 130, life: 0.45, maxLife: 0.45, color: '#ff7722', width: 6 });
+                            if (dist(this, player) < 95 + player.size) player.takeDamage(this.lavaLeapDmg);
+                            if (game.fireZones.length < 40) game.fireZones.push({ x: this.x, y: this.y, radius: 46, damage: this.lavaPoolDmg, remaining: 2.5, tickRate: 0.5, tickTimer: 0, rgb: '255,120,40' });
+                            triggerShake(7, 0.35);
+                            sound.play('explosion');
+                            spawnParticles(this.x, this.y, 24, '#ff6622', 140, 0.55, 5);
+                        }
+                        return; // 滞空悬停
+                    }
+                    // ===== 熔岩巨兽：熔火硬化（石化停驻减伤窗口） =====
+                    if (this.hardened > 0) {
+                        this.hardened -= dt;
+                        if (Math.random() < 0.35) spawnParticles(this.x + rand(-this.size, this.size) * 0.7, this.y - rand(0, this.size * 0.6), 1, '#ffa044', 30, 0.5, 2);
+                        return; // 石化期间不动不放技能
+                    }
                     if (this.isBoss) {
                         if (this.shieldRecharge > 0) this.shieldRecharge -= dt;
                         if (this.stunTimer > 0) { this.stunTimer -= dt; return; }
@@ -317,7 +401,80 @@
                             }
                         }
                         const hpRatio = this.hp / this.maxHp;
-                        if (this.typeKey === 'broodmother') {
+                        if (this.typeKey === 'lavabeast') {
+                            // 狂暴：<40% 血量，技能间隔×0.7，移动留火焰足迹
+                            if (!this.enraged && hpRatio < 0.4) {
+                                this.enraged = true;
+                                game.warningText = '熔岩巨兽进入狂暴！';
+                                game.warningTimer = 1.5;
+                                sound.play('bossWarn');
+                                triggerShake(6, 0.4);
+                            }
+                            const rush = this.enraged ? 0.7 : 1;
+                            if (this.enraged) {
+                                this.trailTimer -= dt;
+                                if (this.trailTimer <= 0) {
+                                    this.trailTimer = 0.55;
+                                    if (game.fireZones.length < 40) game.fireZones.push({ x: this.x, y: this.y, radius: 34, damage: this.lavaPoolDmg, remaining: 2.2, tickRate: 0.5, tickTimer: 0, rgb: '255,120,40' });
+                                }
+                            }
+                            // 技能：熔岩弹幕（环形火弹齐射）
+                            this.lavaBarrageTimer -= dt;
+                            if (this.lavaBarrageTimer <= 0) {
+                                this.lavaBarrageTimer = this.lavaBarrageInterval * rush;
+                                const n = this.enraged ? 16 : 12;
+                                for (let i = 0; i < n; i++) {
+                                    const a = (Math.PI * 2 / n) * i + rand(0, 0.4);
+                                    game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * 200, Math.sin(a) * 200, this.lavaDmg, 0, 0, i % 2 ? '#ff7722' : '#ffaa33', 7, true));
+                                }
+                                spawnParticles(this.x, this.y, 18, '#ff8833', 120, 0.5, 5);
+                                sound.play('explosion');
+                            }
+                            // 技能：熔岩喷发（玩家附近预警圈→爆燃火区+触伤）
+                            this.lavaEruptTimer -= dt;
+                            if (this.lavaEruptTimer <= 0) {
+                                this.lavaEruptTimer = this.lavaEruptInterval * rush;
+                                const warns = this.enraged ? 5 : 3;
+                                if (!game.lavaWarns) game.lavaWarns = [];
+                                for (let i = 0; i < warns; i++) {
+                                    game.lavaWarns.push({ x: clamp(player.x + rand(-110, 110), 30, WORLD_W - 30), y: clamp(player.y + rand(-110, 110), 30, WORLD_H - 30), r: 52, t: 0.9, max: 0.9, dmg: this.lavaEruptDmg, poolDmg: this.lavaPoolDmg });
+                                }
+                                sound.play('bossWarn');
+                            }
+                            // 技能：震地跃击
+                            this.lavaLeapTimer -= dt;
+                            if (this.lavaLeapTimer <= 0 && !this.leaping) {
+                                this.lavaLeapTimer = this.lavaLeapInterval * rush;
+                                this.leaping = true;
+                                this.leapT = 0.75;
+                                this.leapWarnX = player.x; this.leapWarnY = player.y;
+                                spawnParticles(this.x, this.y, 20, '#ff6622', 90, 0.5, 5);
+                            }
+                            // 技能：熔火硬化
+                            this.lavaHardenTimer -= dt;
+                            if (this.lavaHardenTimer <= 0 && this.hardened <= 0 && !this.leaping) {
+                                this.lavaHardenTimer = this.lavaHardenInterval * rush;
+                                this.hardened = 3;
+                                spawnParticles(this.x, this.y, 22, '#cccccc', 70, 0.6, 4);
+                                sound.play('shield');
+                            }
+                            // 召唤熔岩幼体
+                            this.summonTimer -= dt;
+                            if (this.summonTimer <= 0) {
+                                this.summonTimer = this.summonInterval * (this.enraged ? 0.8 : 1);
+                                for (let i = 0; i < this.summonCount; i++) {
+                                    if (game.enemies.length >= MAX_ENEMIES) break;
+                                    const ang = rand(0, Math.PI * 2);
+                                    const mxp = clamp(this.x + Math.cos(ang) * (this.size + 20), 20, WORLD_W - 20);
+                                    const myp = clamp(this.y + Math.sin(ang) * (this.size + 20), 20, WORLD_H - 20);
+                                    const minion = new Enemy(mxp, myp, 'lavaling', game.difficultyLevel - 1);
+                                    minion.bossMinion = this;
+                                    game.enemies.push(minion);
+                                    spawnParticles(mxp, myp, 8, '#ff6622', 60, 0.4, 3);
+                                }
+                                sound.play('summon');
+                            }
+                        } else if (this.typeKey === 'broodmother') {
                             const phase3 = hpRatio < 0.25;
                             // ===== 母皇：召唤幼体（50%狂暴：2秒×4只；25%三阶段：1.6秒×4只且幼体强化30%） =====
                             let summonInt = this.summonInterval;
@@ -500,11 +657,36 @@
                                 this.takeDamage(Math.max(1, Math.floor(this.damage * 0.5)), 'thorn');
                                 spawnParticles(this.x, this.y, 6, '#88dd55', 60, 0.3, 3);
                             }
+                            // 词缀（不可能模式）：灼热=接触附加燃烧 / 嗜血=近战回吸自身
+                            if (this.affixBurn) {
+                                player.dotEffects = player.dotEffects.filter(d => d.source !== this);
+                                player.dotEffects.push({ amount: 2, remaining: 2, source: this });
+                            }
+                            if (this.affixLeech && this.hp > 0) {
+                                const heal = Math.max(1, Math.floor(this.damage * 0.5));
+                                if (this.hp < this.maxHp) spawnParticles(this.x, this.y - this.size, 4, '#55cc66', 40, 0.35, 2);
+                                this.hp = Math.min(this.maxHp, this.hp + heal);
+                            }
                             const pushDx = this.x - player.x, pushDy = this.y - player.y, pushD = Math.hypot(pushDx, pushDy) || 1;
                             this.x = player.x + pushDx / pushD * (this.size + player.size + 2);
                             this.y = player.y + pushDy / pushD * (this.size + player.size + 2);
                         }
                     }
+                }
+
+                // 熔岩巨兽：进入濒死爆燃演出（期间免伤锁定，结束才走真正死亡结算奖励）
+                enterLavaDeath() {
+                    this.dying = true;
+                    this.hp = 0;
+                    this.hardened = 0;
+                    this.leaping = false;
+                    this.deathTimer = 2.4;
+                    this.deathBurstTimer = 0.15;
+                    game.warningText = '熔岩巨兽核心过载！';
+                    game.warningTimer = 1.6;
+                    sound.play('bossWarn');
+                    triggerShake(8, 0.5);
+                    spawnParticles(this.x, this.y, 30, '#ff5522', 150, 0.7, 6);
                 }
 
                 fireAtPlayer(player) {
@@ -619,6 +801,50 @@
                         ctx.strokeStyle = `rgba(255,215,0,${pulse + 0.3})`;
                         ctx.lineWidth = 2;
                         ctx.beginPath(); ctx.arc(this.x, this.y, this.size + 5, 0, Math.PI * 2); ctx.stroke();
+                    }
+                    // 词缀光环（不可能模式）
+                    if (this.affixColor) {
+                        ctx.strokeStyle = this.affixColor; ctx.lineWidth = 1.5;
+                        ctx.beginPath(); ctx.arc(this.x, this.y, this.size + 4, 0, Math.PI * 2); ctx.stroke();
+                    }
+                    // ===== 熔岩巨兽专属视觉 =====
+                    if (this.typeKey === 'lavabeast') {
+                        const lp = 0.5 + Math.sin(game.time * 5) * 0.3;
+                        // 岩浆裂纹（旋转辐射线）
+                        ctx.strokeStyle = `rgba(255,140,40,${0.45 + lp * 0.5})`; ctx.lineWidth = 2;
+                        for (let i = 0; i < 5; i++) {
+                            const ca = (Math.PI * 2 / 5) * i + game.time * 0.6;
+                            ctx.beginPath();
+                            ctx.moveTo(this.x, this.y);
+                            ctx.lineTo(this.x + Math.cos(ca) * this.size * 0.85, this.y + Math.sin(ca) * this.size * 0.85);
+                            ctx.stroke();
+                        }
+                        // 熔核辉光
+                        const coreG = ctx.createRadialGradient(this.x, this.y, 2, this.x, this.y, this.size * 0.7);
+                        coreG.addColorStop(0, `rgba(255,200,80,${0.5 + lp * 0.4})`);
+                        coreG.addColorStop(1, 'rgba(255,120,30,0)');
+                        ctx.fillStyle = coreG; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 0.7, 0, Math.PI * 2); ctx.fill();
+                        // 熔火硬化石壳
+                        if (this.hardened > 0) {
+                            ctx.strokeStyle = 'rgba(165,165,175,0.95)'; ctx.lineWidth = 5;
+                            ctx.beginPath(); ctx.arc(this.x, this.y, this.size + 2, 0, Math.PI * 2); ctx.stroke();
+                        }
+                        // 濒死爆燃闪烁
+                        if (this.dying) {
+                            const da = Math.max(0, 0.35 + Math.sin(game.time * 22) * 0.3);
+                            ctx.fillStyle = `rgba(255,240,180,${da})`;
+                            ctx.beginPath(); ctx.arc(this.x, this.y, this.size * (1.2 + Math.sin(game.time * 14) * 0.12), 0, Math.PI * 2); ctx.fill();
+                        }
+                        // 震地跃击：滞空半透明+落点预警圈
+                        if (this.leaping) {
+                            const lw = 0.5 + Math.sin(game.time * 14) * 0.3;
+                            ctx.strokeStyle = `rgba(255,100,40,${lw + 0.25})`; ctx.lineWidth = 3;
+                            ctx.beginPath(); ctx.arc(this.leapWarnX, this.leapWarnY, 95, 0, Math.PI * 2); ctx.stroke();
+                            ctx.globalAlpha = 0.55;
+                            ctx.fillStyle = this.color;
+                            ctx.beginPath(); ctx.arc(this.x, this.y - 14, this.size, 0, Math.PI * 2); ctx.fill();
+                            ctx.globalAlpha = 1;
+                        }
                     }
                     if (this.isGhost) { ctx.fillStyle = 'rgba(200,200,255,0.3)'; ctx.beginPath(); ctx.arc(this.x, this.y, this.size + 4, 0, Math.PI * 2); ctx.fill(); }
                     if (this.slowTimer > 0) { ctx.fillStyle = 'rgba(150,200,255,0.5)'; ctx.beginPath(); ctx.arc(this.x, this.y, this.size + 3, 0, Math.PI * 2); ctx.fill(); }

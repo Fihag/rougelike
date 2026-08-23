@@ -174,6 +174,7 @@
                 game.soulShards = 0;
                 game.waveTimer = 100; game.waveState = 'idle'; game.waveEliteLeft = 0; game.waveNoticeTimer = 0;
                 game.chests = [];
+                game.lavaWarns = [];
                 // 定时炸弹：穿戴时首爆固定在开局 10 秒后（此前提前赋值被下方清零覆盖，导致开局瞬间即爆）
                 game.bombTimer = game.player.relicBomb ? 10 : 0;
                 game.altars = []; game.altarTimer = 45;
@@ -364,7 +365,7 @@
                                 w.spiritStates.push({ x: player.x, y: player.y, target: null, lockTimer: 0, attackTimer: 0 });
                             }
                         }
-                        const alive = game.enemies.filter(e => e && e.alive && !e.deathMarked);
+                        const alive = game.enemies.filter(e => e && e.alive && !e.deathMarked && !e.dying);
                         // A. 独立锁敌：优先分配未被锁定的目标，各精灵锁距自身最近的存活敌人（全图）
                         // 报复机制：玩家刚受击时，精灵强制锁定距玩家最近的敌人
                         const revenge = player.revengeTimer > 0;

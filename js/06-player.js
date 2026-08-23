@@ -237,7 +237,7 @@
 
                 getNearestEnemy() {
                     let nearest = null, minDist = Infinity;
-                    for (const enemy of game.enemies) { if (!enemy.alive || enemy.deathMarked) continue; const d = dist(this, enemy); if (d < minDist) { minDist = d; nearest = enemy; } }
+                    for (const enemy of game.enemies) { if (!enemy.alive || enemy.deathMarked || enemy.dying) continue; const d = dist(this, enemy); if (d < minDist) { minDist = d; nearest = enemy; } }
                     return nearest;
                 }
 

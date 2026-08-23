@@ -137,6 +137,19 @@
                             if (game.chainLightningVisuals[i].life <= 0) game.chainLightningVisuals.splice(i, 1);
                         }
                     }
+                    // 熔岩喷发预警圈：倒计时结束后爆燃成火区并造成一次触伤
+                    if (game.lavaWarns && game.lavaWarns.length) {
+                        for (let i = game.lavaWarns.length - 1; i >= 0; i--) {
+                            const w = game.lavaWarns[i];
+                            w.t -= cappedDt;
+                            if (w.t > 0) continue;
+                            game.lavaWarns.splice(i, 1);
+                            game.fireZones.push({ x: w.x, y: w.y, radius: w.r * 0.92, damage: w.poolDmg, remaining: 2.6, tickRate: 0.5, tickTimer: 0, rgb: '255,120,40' });
+                            if (dist(player, w) < w.r + player.size) player.takeDamage(w.dmg);
+                            spawnParticles(w.x, w.y, 12, '#ff8833', 110, 0.45, 4);
+                            sound.play('explosion');
+                        }
+                    }
                     for (const proj of game.projectiles) {
                         proj.update(cappedDt);
                         // 酸弹落地：生成毒池
@@ -538,6 +551,16 @@
                     else { ctx.fillStyle = '#10305a'; ctx.beginPath(); ctx.arc(a.x, ay, 5, 0, Math.PI * 2); ctx.fill(); }
                 }
                 for (const proj of game.projectiles) proj.draw(ctx);
+                // 熔岩喷发预警圈（脉动橙圈）
+                if (game.lavaWarns && game.lavaWarns.length) {
+                    for (const w of game.lavaWarns) {
+                        const wp = 0.45 + Math.sin(game.time * 12) * 0.3;
+                        ctx.fillStyle = `rgba(255,110,40,${0.10 + wp * 0.12})`;
+                        ctx.strokeStyle = `rgba(255,110,40,${wp + 0.3})`;
+                        ctx.lineWidth = 2.5;
+                        ctx.beginPath(); ctx.arc(w.x, w.y, w.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                    }
+                }
                 for (const enemy of game.enemies) enemy.draw(ctx);
                 if (game.deathMark.enabled) {
                     for (const enemy of game.enemies) {
