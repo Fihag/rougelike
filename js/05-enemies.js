@@ -9,7 +9,7 @@
                 hatchling:  { name: '巢穴幼体', hp: 25, speed: 135, size: 8, color: '#a8e063', xpValue: 12, damage: 9, shape: 'circle' },
                 broodmother: { name: '虫巢母皇', hp: 2300, speed: 42, size: 30, color: '#7cbf4d', xpValue: 200, damage: 30, shape: 'circle', isBoss: true, shieldBase: 850, slashDamage: 0, slashSpeed: 0, slashCooldown: 6, chargeTime: 0.9, summonType: 'hatchling', summonInterval: 3.5, summonCount: 3, auraColor: 'rgba(120,200,80,0.6)', scale: { hpRate: 0.30, shieldRate: 0.25, shieldRate3: 0.30, contactRate: 0.06, acidRate: 0.20, speedRate: 0.40, speedCap: 3 } },
                 assassin:  { name: '暗影刺客', hp: 1300, speed: 135, size: 20, color: '#5a2a7a', xpValue: 200, damage: 30, shape: 'triangle', isBoss: true, shieldBase: 1050, slashDamage: 30, slashSpeed: 290, slashCooldown: 3.5, chargeTime: 0.9, shurikenDamage: 20, shurikenSpeed: 270, shurikenCount: 6, shurikenInterval: 7, auraColor: 'rgba(120,60,190,0.6)', scale: { hpRate: 0.20, shieldRate: 0.25, slashRate: 0.25, speedRate: 0.35, speedCap: 3 } },
-                lavabeast: { name: '熔岩巨兽', hp: 3000, speed: 115, size: 34, color: '#8a2b08', xpValue: 240, damage: 34, shape: 'circle', isBoss: true, shieldBase: 1300, slashDamage: 26, slashSpeed: 240, slashCooldown: 5.5, chargeTime: 0.9, summonType: 'lavaling', summonInterval: 8, summonCount: 3, auraColor: 'rgba(255,90,20,0.65)', scale: { hpRate: 0.32, shieldRate: 0.28, contactRate: 0.06, slashRate: 0.22, speedRate: 0.35, speedCap: 3 } },
+                lavabeast: { name: '熔岩巨兽', hp: 3000, speed: 125, size: 34, color: '#8a2b08', xpValue: 240, damage: 34, shape: 'circle', isBoss: true, shieldBase: 1300, slashDamage: 26, slashSpeed: 240, slashCooldown: 5.5, chargeTime: 0.9, summonType: 'lavaling', summonInterval: 8, summonCount: 3, auraColor: 'rgba(255,90,20,0.65)', scale: { hpRate: 0.32, shieldRate: 0.28, contactRate: 0.06, slashRate: 0.22, speedRate: 0.35, speedCap: 3 } },
                 lavaling:  { name: '熔岩幼体', hp: 18, speed: 95, size: 9, color: '#ff6622', xpValue: 10, damage: 6, shape: 'circle', isGhost: true, slowAmount: 0.35, slowDuration: 1.5, dotDamage: 2, dotDuration: 2 }
             };
 
@@ -149,6 +149,12 @@
                             this.lavaAimInterval = 4.5;
                             this.lavaAimWave = 0;           // 瞄准弹幕剩余波次
                             this.lavaAimWaveTimer = 0;      // 波间隔 0.15s
+                            this.lavaChargeTimer = 6;       // 炽热冲锋
+                            this.lavaChargeState = 'idle';  // idle / warn / dash
+                            this.lavaChargeT = 0;
+                            this.lavaChargeDx = 0; this.lavaChargeDy = 0;
+                            this.lavaChargeHit = false;
+                            this.lavaHarrassTimer = 0.45;   // 熔岩连射（常驻压制）
                             this.hardened = 0;              // 硬化剩余时间（石化停驻）
                             this.leaping = false;           // 滞空免伤中
                             this.leapWarnX = 0; this.leapWarnY = 0;
@@ -396,6 +402,43 @@
                         if (Math.random() < 0.35) spawnParticles(this.x + rand(-this.size, this.size) * 0.7, this.y - rand(0, this.size * 0.6), 1, '#ffa044', 30, 0.5, 2);
                         return; // 石化期间不动不放技能
                     }
+                    // ===== 熔岩巨兽：炽热冲锋（预警→直线冲撞，反放风筝核心） =====
+                    if (this.lavaChargeState === 'warn') {
+                        this.lavaChargeT -= dt;
+                        // 预警期间持续瞄准，发射瞬间锁定方向
+                        const ca = Math.atan2(player.y - this.y, player.x - this.x);
+                        this.lavaChargeDx = Math.cos(ca); this.lavaChargeDy = Math.sin(ca);
+                        if (this.lavaChargeT <= 0) {
+                            this.lavaChargeState = 'dash';
+                            this.lavaChargeT = 0.65;
+                            this.lavaChargeHit = false;
+                            sound.play('explosion');
+                        }
+                        return; // 预警停驻
+                    }
+                    if (this.lavaChargeState === 'dash') {
+                        this.lavaChargeT -= dt;
+                        const oldX = this.x, oldY = this.y;
+                        this.x = clamp(this.x + this.lavaChargeDx * 560 * dt, this.size, WORLD_W - this.size);
+                        this.y = clamp(this.y + this.lavaChargeDy * 560 * dt, this.size, WORLD_H - this.size);
+                        if (Math.random() < 0.6) spawnParticles(this.x, this.y, 2, '#ff7722', 40, 0.3, 3);
+                        // 撞到玩家：剑气伤害 + 击退
+                        if (!this.lavaChargeHit && dist(this, player) < this.size + player.size + 4) {
+                            this.lavaChargeHit = true;
+                            player.takeDamage(this.slashDamage);
+                            player.x = clamp(player.x + this.lavaChargeDx * 60, player.size, WORLD_W - player.size);
+                            player.y = clamp(player.y + this.lavaChargeDy * 60, player.size, WORLD_H - player.size);
+                            triggerShake(6, 0.3);
+                        }
+                        // 撞墙或冲撞结束（无眩晕，直接恢复行动）
+                        const hitWall = (this.x === oldX && Math.abs(this.lavaChargeDx) > 0.01) || (this.y === oldY && Math.abs(this.lavaChargeDy) > 0.01);
+                        if (this.lavaChargeT <= 0 || hitWall) {
+                            this.lavaChargeState = 'idle';
+                            spawnParticles(this.x, this.y, 16, '#ff6622', 110, 0.5, 5);
+                            triggerShake(4, 0.2);
+                        }
+                        return; // 冲撞期间不执行其他行为
+                    }
                     if (this.isBoss) {
                         if (this.shieldRecharge > 0) this.shieldRecharge -= dt;
                         if (this.stunTimer > 0) { this.stunTimer -= dt; return; }
@@ -420,6 +463,21 @@
                                 triggerShake(6, 0.4);
                             }
                             const rush = this.enraged ? 0.5 : 1;
+                            // 常驻压制：熔岩连射（朝玩家单发，带散布）
+                            this.lavaHarrassTimer -= dt;
+                            if (this.lavaHarrassTimer <= 0) {
+                                this.lavaHarrassTimer = this.enraged ? 0.3 : 0.45;
+                                const ha = Math.atan2(player.y - this.y, player.x - this.x) + rand(-0.12, 0.12);
+                                game.projectiles.push(new Projectile(this.x, this.y, Math.cos(ha) * 300, Math.sin(ha) * 300, Math.max(1, Math.floor(this.lavaDmg * 0.6)), 0, 0, '#ffaa55', 5, true));
+                            }
+                            // 技能：炽热冲锋（拉近距离，反放风筝）
+                            this.lavaChargeTimer -= dt;
+                            if (this.lavaChargeTimer <= 0 && this.lavaChargeState === 'idle' && !this.leaping) {
+                                this.lavaChargeTimer = this.enraged ? 5 : 7;
+                                this.lavaChargeState = 'warn';
+                                this.lavaChargeT = 0.4;
+                                sound.play('bossWarn');
+                            }
                             if (this.enraged) {
                                 this.trailTimer -= dt;
                                 if (this.trailTimer <= 0) {
@@ -466,16 +524,16 @@
                                 const warns = this.enraged ? 6 : 4;
                                 if (!game.lavaWarns) game.lavaWarns = [];
                                 for (let i = 0; i < warns; i++) {
-                                    game.lavaWarns.push({ x: clamp(player.x + rand(-70, 70), 30, WORLD_W - 30), y: clamp(player.y + rand(-70, 70), 30, WORLD_H - 30), r: 62, t: 0.7, max: 0.7, dmg: this.lavaEruptDmg, poolDmg: this.lavaPoolDmg });
+                                    game.lavaWarns.push({ x: clamp(player.x + rand(-70, 70), 30, WORLD_W - 30), y: clamp(player.y + rand(-70, 70), 30, WORLD_H - 30), r: 70, t: 0.6, max: 0.6, dmg: this.lavaEruptDmg, poolDmg: this.lavaPoolDmg });
                                 }
                                 sound.play('bossWarn');
                             }
                             // 技能：震地跃击
                             this.lavaLeapTimer -= dt;
-                            if (this.lavaLeapTimer <= 0 && !this.leaping) {
+                            if (this.lavaLeapTimer <= 0 && !this.leaping && this.lavaChargeState === 'idle') {
                                 this.lavaLeapTimer = this.lavaLeapInterval * rush;
                                 this.leaping = true;
-                                this.leapT = 0.55;
+                                this.leapT = 0.35;
                                 this.leapWarnX = player.x; this.leapWarnY = player.y;
                                 spawnParticles(this.x, this.y, 20, '#ff6622', 90, 0.5, 5);
                             }
@@ -863,6 +921,20 @@
                             const da = Math.max(0, 0.35 + Math.sin(game.time * 22) * 0.3);
                             ctx.fillStyle = `rgba(255,240,180,${da})`;
                             ctx.beginPath(); ctx.arc(this.x, this.y, this.size * (1.2 + Math.sin(game.time * 14) * 0.12), 0, Math.PI * 2); ctx.fill();
+                        }
+                        // 炽热冲锋：预警方向线 / 冲撞高亮
+                        if (this.lavaChargeState === 'warn') {
+                            const cw = 0.5 + Math.sin(game.time * 16) * 0.35;
+                            ctx.strokeStyle = `rgba(255,60,30,${cw + 0.3})`; ctx.lineWidth = 3;
+                            ctx.beginPath(); ctx.moveTo(this.x, this.y);
+                            ctx.lineTo(this.x + this.lavaChargeDx * 420, this.y + this.lavaChargeDy * 420); ctx.stroke();
+                            ctx.beginPath(); ctx.arc(this.x, this.y, this.size + 8, 0, Math.PI * 2); ctx.stroke();
+                        }
+                        if (this.lavaChargeState === 'dash') {
+                            ctx.globalAlpha = 0.45;
+                            ctx.fillStyle = '#ffcc66';
+                            ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 1.15, 0, Math.PI * 2); ctx.fill();
+                            ctx.globalAlpha = 1;
                         }
                         // 震地跃击：滞空半透明+落点预警圈
                         if (this.leaping) {

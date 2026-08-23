@@ -143,11 +143,11 @@
                             const w = game.lavaWarns[i];
                             w.t -= cappedDt;
                             if (w.t > 0) {
-                                // 追踪：以 120px/s 向玩家当前位置漂移
+                                // 追踪：以 260px/s 向玩家当前位置漂移（追平玩家移速）
                                 const dx = player.x - w.x, dy = player.y - w.y, d = Math.hypot(dx, dy) || 1;
                                 if (d > w.r * 0.5) {
-                                    w.x = clamp(w.x + dx / d * 120 * cappedDt, 30, WORLD_W - 30);
-                                    w.y = clamp(w.y + dy / d * 120 * cappedDt, 30, WORLD_H - 30);
+                                    w.x = clamp(w.x + dx / d * 260 * cappedDt, 30, WORLD_W - 30);
+                                    w.y = clamp(w.y + dy / d * 260 * cappedDt, 30, WORLD_H - 30);
                                 }
                                 continue;
                             }
