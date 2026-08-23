@@ -15,6 +15,8 @@
                 { id: 'relic_shield_start', name: '开局护盾', icon: 'shield', cost: 300, maxLevel: 3, upgradeCost: 400,
                     desc: (lv) => '开局获得灵魂护盾：护盾量 ' + (50 + 30 * (lv - 1)) + '，' + Math.max(4, 15 - 3 * (lv - 1)) + ' 秒自动恢复（每级：护盾量+30、恢复-3秒）' },
                 { id: 'relic_shard_boost', name: '财富之心', desc: '每局结算的灵魂碎片 ×1.2', icon: 'coins', cost: 650 },
+                { id: 'relic_last_stand', name: '背水一战', icon: 'trending-up', cost: 300, maxLevel: 3, upgradeCost: 400, rate: [0.25, 0.35, 0.45],
+                    desc: (lv) => '生命每损失 1%，伤害 +' + [0.25, 0.35, 0.45][lv - 1] + '%（满血无加成，血量越低伤害越高；每级+0.10%）' },
                 { id: 'relic_deathmark', name: '死神之指', desc: '解锁死神之指：标记目标并抹杀（手动可标记 Boss）', icon: 'skull', cost: 5999 }
             ];
             // ===== 成就系统（局外碎片奖励） =====

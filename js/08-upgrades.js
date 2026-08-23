@@ -220,7 +220,7 @@
                                     let a = angle;
                                     if (total > 1) a = angle - spread * (total - 1) / 2 + spread * i;
                                     const vx = Math.cos(a) * w.projectileSpeed, vy = Math.sin(a) * w.projectileSpeed;
-                                    const dmg = w.damage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult();
+                                    const dmg = w.damage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult() * player.getLowHpMult();
                                     const proj = new Projectile(player.x, player.y, vx, vy, dmg, w.splashRadius || 0, w.splashDamagePercent || 0, '#ff9933');
                                     proj.knockback = w.knockback || 0;
                                     game.projectiles.push(proj);
@@ -236,7 +236,7 @@
                             for (const enemy of game.enemies) {
                                 if (!enemy.alive || enemy.orbitHitCd > 0) continue;
                                 if (Math.hypot(bx - enemy.x, by - enemy.y) < w.radius * 0.25 + enemy.size) {
-                                    let dmg = w.damage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult();
+                                    let dmg = w.damage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult() * player.getLowHpMult();
                                     if (player.synergyBladeSpeed) {
                                         const moveBonus = Math.min(0.4, ((player.speedMultiplier || 1) - 1) * 0.5);
                                         dmg *= (1 + moveBonus);
@@ -248,7 +248,7 @@
                         }
                     } else if (w.type === 'frost_nova') {
                         if (w.cooldown <= 0) {
-                            const dmg = w.damage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult();
+                            const dmg = w.damage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult() * player.getLowHpMult();
                             for (const enemy of game.enemies) {
                                 if (!enemy.alive) continue;
                                 if (dist(player, enemy) < w.radius) {
@@ -278,7 +278,7 @@
                         if (w.cooldown <= 0) {
                             const nearest = player.getNearestEnemy();
                             if (nearest) {
-                                const dmg = w.damage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult();
+                                const dmg = w.damage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult() * player.getLowHpMult();
                                 const hitEnemies = new Set();
                                 let current = nearest;
                                 let currentDmg = dmg;
@@ -325,7 +325,7 @@
                                 const dropMeteor = (tx, ty) => {
                                     game.meteorVisuals.push({
                                         x: tx, y: ty - 300, targetY: ty,
-                                        fallSpeed: 600, damage: w.damage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult(),
+                                        fallSpeed: 600, damage: w.damage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult() * player.getLowHpMult(),
                                         radius: w.radius, landed: false, leaveBurning: w.leaveBurning || false,
                                         burningDuration: w.burningDuration || 3,
                                         burningTickRate: w.burningTickRate || 0.5,
@@ -403,7 +403,7 @@
                                     st.attackTimer -= dt;
                                     if (st.attackTimer <= 0) {
                                         st.attackTimer = attackInterval;
-                                        const dmg = w.damage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult();
+                                        const dmg = w.damage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult() * player.getLowHpMult();
                                         const dx = t.x - st.x, dy = t.y - st.y;
                                         const dd = Math.hypot(dx, dy) || 1;
                                         const spd = 300;
