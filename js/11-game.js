@@ -227,13 +227,9 @@
                             game.waveTimer = WAVE_INTERVAL_AFTER;
                         }
                     }
-                    // 普通刷怪：仅 warning 预警期间暂停，其余状态（idle/active/reward）照常刷
-                    if (game.waveState !== 'warning') {
-                        if (!dbg.pauseSpawn) {
-                            if (game.spawnTimer <= 0) { game.spawnTimer = game.spawnInterval; spawnEnemy(); }
-                        }
-                    } else {
-                        game.spawnTimer = game.spawnInterval;
+                    // 普通刷怪：精英预警期间照常刷（精英落地时才清场普通小怪）
+                    if (!dbg.pauseSpawn) {
+                        if (game.spawnTimer <= 0) { game.spawnTimer = game.spawnInterval; spawnEnemy(); }
                     }
                     // 宝箱更新：倒计时 + 拾取
                     for (let i = game.chests.length - 1; i >= 0; i--) {
@@ -430,6 +426,59 @@
                 }
             }
 
+            // ==================== 屏外目标指示箭头（祭坛/宝箱；屏幕空间绘制） ====================
+            function drawOffscreenArrows(ctx) {
+                if (game.state !== 'playing' || !game.player) return;
+                const player = game.player;
+                const m = 30; // 屏幕内缩边距：目标进入此范围内视为可见
+                const targets = [];
+                for (const a of (game.altars || [])) {
+                    const kind = a.type === 'heal' ? { color: '#55cc77', label: '祭坛' }
+                        : a.type === 'risk' ? { color: '#ff5544', label: '祭坛' }
+                        : { color: '#44aaff', label: '传送门' };
+                    targets.push({ x: a.x, y: a.y, color: kind.color, label: kind.label });
+                }
+                for (const c of (game.chests || [])) {
+                    targets.push({ x: c.x, y: c.y, color: '#ffd700', label: '宝箱' });
+                }
+                if (!targets.length) return;
+                // 玩家实际屏幕位置（镜头 clamp 时玩家不居中，以其为射线起点更准确）
+                const psx = player.x - cam.x, psy = player.y - cam.y;
+                for (const t of targets) {
+                    const sx = t.x - cam.x, sy = t.y - cam.y;
+                    if (sx > m && sx < W - m && sy > m && sy < H - m) continue; // 屏内可见
+                    let dx = sx - psx, dy = sy - psy;
+                    if (dx === 0 && dy === 0) continue;
+                    // 射线与内缩矩形求交：取到达边界的最小比例
+                    const s = Math.min(
+                        dx > 0 ? (W - m - psx) / dx : dx < 0 ? (m - psx) / dx : Infinity,
+                        dy > 0 ? (H - m - psy) / dy : dy < 0 ? (m - psy) / dy : Infinity
+                    );
+                    const ex = clamp(psx + dx * s, m, W - m);
+                    const ey = clamp(psy + dy * s, m, H - m);
+                    const ang = Math.atan2(dy, dx);
+                    const pulse = 0.75 + Math.sin(game.time * 5) * 0.25;
+                    ctx.save();
+                    ctx.translate(ex, ey);
+                    ctx.rotate(ang);
+                    ctx.globalAlpha = pulse;
+                    ctx.fillStyle = t.color;
+                    ctx.beginPath();
+                    ctx.moveTo(11, 0); ctx.lineTo(-7, -8); ctx.lineTo(-3, 0); ctx.lineTo(-7, 8);
+                    ctx.closePath(); ctx.fill();
+                    ctx.restore();
+                    // 文字标注贴在箭头内侧（朝屏幕中心一侧）
+                    const inr = 22; // 内退距离
+                    const tx = ex - Math.cos(ang) * inr, ty = ey - Math.sin(ang) * inr;
+                    ctx.globalAlpha = Math.min(1, pulse + 0.15);
+                    ctx.fillStyle = t.color;
+                    ctx.font = 'bold 12px "PingFang SC","Microsoft YaHei",sans-serif';
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(t.label, tx, ty);
+                    ctx.globalAlpha = 1;
+                }
+            }
+
             function draw(ctx) {
                 // 每帧从确定的变换开始：重置为像素缩放再清屏/铺底色，避免上一帧残留变换导致清屏错位、顶端出现残影
                 ctx.setTransform(PIXEL_SCALE, 0, 0, PIXEL_SCALE, 0, 0);
@@ -529,6 +578,8 @@
                     ctx.fillStyle = `rgba(255,220,180,${Math.max(0.02, da)})`;
                     ctx.beginPath(); ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2); ctx.fill();
                 }
+                // 屏外目标指示箭头（祭坛/宝箱）
+                drawOffscreenArrows(ctx);
                 if (game.state === 'levelup' || game.bossDropChoices) {
                     ctx.fillStyle = 'rgba(43,26,18,0.4)'; ctx.fillRect(0, 0, W, H);
                 }
