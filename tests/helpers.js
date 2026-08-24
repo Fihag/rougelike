@@ -149,6 +149,7 @@ export function loadGame() {
     "00-const.js",
     "01-input.js",
     "02-utils.js",
+    "config.js",
     "03-skills.js",
     "04-meta.js",
     "05-enemies.js",
@@ -157,7 +158,9 @@ export function loadGame() {
     "08-upgrades.js",
     "09-deathmark.js",
     "10-events.js",
-    "11-game.js",
+    "game/update.js",
+    "game/render.js",
+    "game/ui.js",
   ];
   for (const f of files) {
     const code = readFileSync(join(process.cwd(), "js", f), "utf8");
