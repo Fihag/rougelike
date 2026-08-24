@@ -149,11 +149,12 @@
                 const dm = game.deathMark;
                 // 手动模式：最多同时锁定 3 名敌人（无 CD，抹杀后空出名额可继续标记）
                 if (dm.targets.length >= 3) return false;
-                let best = null, bestD = 40;
+                let best = null, bestD = Infinity;
                 for (const e of game.enemies) {
                     if (!e.alive || e.deathMarked) continue;
                     const d = Math.hypot(e.x - x, e.y - y);
-                    if (d < bestD) { bestD = d; best = e; }
+                    const hitR = Math.max(60, e.size + 32);
+                    if (d < hitR && d < bestD) { bestD = d; best = e; }
                 }
                 if (best) {
                     dmLockTarget(best);

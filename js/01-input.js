@@ -17,8 +17,8 @@
                 if (!game.deathMark.enabled || game.deathMark.mode !== 'manual') return;
                 if (game.state !== 'playing') return;
                 const rect = canvas.getBoundingClientRect();
-                const gx = e.clientX - rect.left;
-                const gy = e.clientY - rect.top;
+                const gx = e.clientX - rect.left + cam.x;
+                const gy = e.clientY - rect.top + cam.y;
                 if (dmTrySelectAt(gx, gy)) {
                     sound.play('bossWarn');
                     game.warningText = '已标记目标！抹杀倒计时…';
@@ -36,7 +36,7 @@
                     if (game.state === 'levelup') { handleLevelupTouch(e); continue; }
                     // 死神之指手动模式：指头直接落在敌人身上时标记，否则该触点作为摇杆
                     if (game.state === 'playing' && game.deathMark.enabled && game.deathMark.mode === 'manual') {
-                        if (dmTrySelectAt(tx, ty)) {
+                        if (dmTrySelectAt(tx + cam.x, ty + cam.y)) {
                             sound.play('bossWarn');
                             game.warningText = '已标记目标！抹杀倒计时…';
                             game.warningTimer = 1.2;
