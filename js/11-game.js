@@ -786,9 +786,10 @@
                     b.addEventListener('click', () => { game.selectedWeapon = key; renderMenu(); });
                     menuWeapons.appendChild(b);
                 }
-                const bt = parseInt(localStorage.getItem('rogue_best_time') || '0', 10);
-                const bk = parseInt(localStorage.getItem('rogue_best_kills') || '0', 10);
-                menuBest.textContent = (bt > 0 || bk > 0) ? `最佳记录：存活 ${bt} 秒 · ${bk} 击杀` : '尚无最佳记录，开启你的第一局吧！';
+                const dk = game.selectedDifficulty || 'normal';
+                const bt = parseInt(localStorage.getItem('rogue_best_time_' + dk) || '0', 10);
+                const bk = parseInt(localStorage.getItem('rogue_best_kills_' + dk) || '0', 10);
+                menuBest.textContent = (bt > 0 || bk > 0) ? `最佳记录（${(DIFFICULTIES[dk] || DIFFICULTIES.normal).name}）：存活 ${bt} 秒 · ${bk} 击杀` : '尚无最佳记录，开启你的第一局吧！';
                 menuShards.textContent = `灵魂碎片：${metaData.shards || 0}`;
             }
 
@@ -912,6 +913,11 @@
                     localStorage.removeItem('rogue_meta');
                     localStorage.removeItem('rogue_meta_sig');
                     localStorage.removeItem('rogue_ach');
+                    // 最佳记录按难度分档，遍历清除
+                    for (const dk of Object.keys(DIFFICULTIES)) {
+                        localStorage.removeItem('rogue_best_time_' + dk);
+                        localStorage.removeItem('rogue_best_kills_' + dk);
+                    }
                     localStorage.removeItem('rogue_best_time');
                     localStorage.removeItem('rogue_best_kills');
                 } catch(e) {}

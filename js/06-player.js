@@ -120,14 +120,15 @@
                         goKills.textContent = game.kills;
                         goLevel.textContent = this.level;
                         goDamage.textContent = Math.floor(game.totalDamageDealt);
-                        // 最佳记录（localStorage）
+                        // 最佳记录（按难度分档存 localStorage）
                         let bestT = 0, bestK = 0, isNew = false;
                         try {
-                            bestT = parseInt(localStorage.getItem('rogue_best_time') || '0', 10) || 0;
-                            bestK = parseInt(localStorage.getItem('rogue_best_kills') || '0', 10) || 0;
+                            const dk = game.selectedDifficulty || 'normal';
+                            bestT = parseInt(localStorage.getItem('rogue_best_time_' + dk) || '0', 10) || 0;
+                            bestK = parseInt(localStorage.getItem('rogue_best_kills_' + dk) || '0', 10) || 0;
                             const t = Math.floor(game.time);
-                            if (t > bestT) { localStorage.setItem('rogue_best_time', t); isNew = true; }
-                            if (game.kills > bestK) { localStorage.setItem('rogue_best_kills', game.kills); isNew = true; }
+                            if (t > bestT) { localStorage.setItem('rogue_best_time_' + dk, t); isNew = true; }
+                            if (game.kills > bestK) { localStorage.setItem('rogue_best_kills_' + dk, game.kills); isNew = true; }
                             // 灵魂碎片结算
                             game.soulShards = settleShards();
                             goShards.textContent = game.soulShards;

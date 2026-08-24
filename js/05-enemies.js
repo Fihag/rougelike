@@ -178,6 +178,8 @@
                     if (this.acidDamage) this.acidDamage = Math.floor(this.acidDamage * dm);
                     if (this.shockwaveDamage) this.shockwaveDamage = Math.floor(this.shockwaveDamage * dm);
                     if (this.shieldBase) this.shieldBase = Math.floor(this.shieldBase * dm);
+                    // 不可能模式：怪物速度额外 ×1.15
+                    if (game.selectedDifficulty === 'impossible') this.speed *= 1.15;
                 }
 
                 getEffectiveSpeed() { return this.slowTimer > 0 ? this.speed * (1 - this.slowAmount) : this.speed; }
