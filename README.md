@@ -1,61 +1,77 @@
-# 魔法幸存者（Pigeon）
+# 魔法幸存者
 
-一款基于 Canvas 的轻量 Roguelite 生存小游戏：单机、无需构建、浏览器直接打开即玩。
+一款基于 Canvas 的轻量 Roguelite 生存小游戏：单机、零构建可双击，`npx serve` 开发，`npm test/lint` 护航。
 
 ## 在线游玩
 
-🌐 **[立即开始游戏](https://rougelike-13h.pages.dev)**
+🌐 **[立即开始游戏](https://rougelike-13h.pages.dev)** （`web/rougelike` 正式版，`debug.html` 仅本地 `?debug`）
 
-手机端建议使用右下角全屏按钮获得沉浸体验；桌面端支持键盘操作。
+手机端建议右下角全屏；桌面端方向键 + 数字键 + 空格暂停。
 
 ## 快速开始
 
-双击打开 `index.html` 即可游玩，或使用任意静态服务器（如 `python -m http.server`）托管整个目录。
+```bash
+# 零构建：双击 index.html 即可（file://）
+# 或
+npx serve web/rougelike -l 8123
+# 开发校验（可选）
+npm install
+npm test        # vitest 6 用例
+npm run lint    # eslint
+```
 
 ## 游戏玩法
 
-- **目标**：在越来越密集的敌人浪潮中尽可能存活，获取经验强化武器
-- **武器**：魔法弹、飞刃、冰霜、闪电链、陨石、暗影精灵，可组合进化
-- **难度**：简单 / 普通 / 困难 / 地狱 / **不可能**，影响敌人属性、出怪频率与初始生命；不可能模式小怪可能携带词缀（迅捷 / 坚韧 / 爆裂 / 灼热 / 嗜血）
-- **精英波次**：每 60 秒一波精英来袭（预警期间普通怪照常刷新），清空后获得宝箱奖励
-- **Boss**：死神骑士（剑气/冲击波）、虫巢母皇（召唤/毒液）、暗影刺客（瞬影突进/影刃回旋），击杀掉落专属道具；**熔岩巨兽**为地狱/不可能模式特供（弹幕/喷发/跃击/硬化/召唤/狂暴），固定 40% 出场率
-- **地图事件**：治疗祭坛（回复 50% 生命）、风险祭坛（生命降低 50%，伤害 +50%）、传送门（位移并留下减速区域）
-- **屏外指示**：祭坛 / 宝箱 / Boss 在屏幕外时，屏幕边缘显示指向箭头与类型文字
-- **灵魂宝库**：局外成长面板，分「天赋」（永久升级）与「圣物」两个分区；圣物共 11 种（吸血之爪 / 荆棘光环 / 贪婪之石 / 定时炸弹 / 开局护盾 / 财富之心 / 背水一战 / 幻影步 / 影子分身 / 时停领域 / 死神之指），可自由穿戴/卸下，部分圣物可升级
-- **成就系统**：局外碎片奖励（闪电侠 / 不死鸟 / 收集狂 / 千军斩等）
-- **死神之指**：在灵魂宝库购买并穿戴后解锁（局内可切换自动/手动）
+- **目标**：在密集浪潮中存活，获取经验强化武器
+- **武器**：魔法弹、飞刃、冰霜、闪电链、陨石、暗影精灵，可组合进化（飞刃风暴 +3）
+- **难度**：简单 / 普通 / 困难 / 地狱 / **不可能**（`DIFFICULTIES` 单源 `js/config.js`）；不可能小怪 50% 词缀、10% 减伤、20% 减速免疫，Boss 减速 40%（不可能 50%，刺客免疫）
+- **精英波次**：每 60 秒一波，预警期间普通怪照常刷新，不清场
+- **Boss**：死神骑士、虫巢母皇、暗影刺客（弹速 +30）、**熔岩巨兽**地狱/不可能 40% 出场，3200血，全弹速 +40，死亡 256 发新星
+- **地图事件**：治疗祭坛 / 风险祭坛 / 传送门 + 屏外箭头
+- **灵魂宝库**：天赋 + 圣物（11 种：`影侍守卫` 已重做为 60% 受击眩晕 0.8s + 10s 双影袭，不可升级）/ 成就 / 死神之指（手动世界坐标修复，刺客 60 半径自适应）
+- **存档**：最佳记录按难度分档，`rogue_best_time_<难度>`
 
-## 操作方式
-
-- **桌面端**：方向键控制角色，数字键快速选择能力，空格暂停/继续
-- **移动端**：在屏幕任意位置按住并拖动控制角色（虚拟摇杆跟随落点出现），选择能力时点按卡片；右上角可暂停、静音，右下角全屏切换
-
-## 文件结构
+## 文件结构（单仓，file:// 直开保留）
 
 ```
-Pigeon/
-├── index.html           游戏入口
+web/rougelike/
+├── index.html              正式版入口（13 脚本按序，file:// 可双击）
+├── debug.html              调试版入口（+ debug.js/panel，仅本地）
 ├── css/
-│   ├── base.css         CSS 变量 / 全局 / 游戏容器
-│   ├── hud.css          HUD / 暂停遮罩 / 顶部按钮
-│   └── panels.css       升级 / Boss掉落 / 结算 / 主菜单 / 灵魂宝库面板
-└── js/                  (按依赖顺序加载，见 index.html 中的 script 顺序)
-    ├── 00-const.js      DOM 引用 / ICONS 图标 / game 状态对象
-    ├── 01-input.js      输入管理（键盘 / 鼠标 / 触屏虚拟摇杆）
-    ├── 02-utils.js      工具函数 / 音效 / 粒子 / 伤害数字 / 屏幕震动
-    ├── 03-skills.js     武器技能注册表 / 难度配置 / 进化融合 / 协同
-    ├── 04-meta.js       灵魂宝库 / 圣物商店 / 成就系统 / 存档
-    ├── 05-enemies.js    敌人类型 / 敌人类 / Boss 技能
-    ├── 06-player.js     玩家类（属性 / 受伤 / 升级）
-    ├── 07-projectiles.js 投射物
-    ├── 08-upgrades.js   升级逻辑 / 精灵锁敌
-    ├── 09-deathmark.js  死神之指逻辑
-    ├── 10-events.js     精英宝箱 / 祭坛传送门 / 刷怪 / Boss 生成
-    └── 11-game.js       主循环 update / draw / 菜单绑定 / 启动
+│   ├── base.css
+│   ├── hud.css
+│   ├── panels.css
+│   └── debug.css
+└── js/
+    ├── 00-const.js         DOM/ICONS/game/cam
+    ├── 01-input.js         键盘/鼠标/摇杆（死神手动已转世界坐标）
+    ├── 02-utils.js         工具/音效/粒子
+    ├── config.js           平衡单源 DIFFICULTIES（P2 抽离）
+    ├── 03-skills.js        武器/进化（e.g. evo_orbit +3）
+    ├── 04-meta.js          宝库/圣物（影侍守卫）/成就
+    ├── enemies/            05-enemies 拆分（P3）
+    │   ├── types.js        ENEMY_TYPES / BOSS_DROP
+    │   ├── core.js         Enemy 构造/减伤/护盾
+    │   ├── update.js       Enemy.update + 熔岩/母皇/刺客逻辑
+    │   └── draw.js         Enemy.draw + 特效
+    ├── 06-player.js        玩家（影侍守卫受击 60% 触发）
+    ├── 07-projectiles.js   弹道（8s/120px）
+    ├── 08-upgrades.js      升级/精灵/影侍跟随
+    ├── 09-deathmark.js     死神之指（60 半径）
+    ├── 10-events.js        波次/祭坛/刷怪（精英不清场）
+    ├── game/               11-game 拆分（P2）
+    │   ├── update.js       主循环 update
+    │   ├── render.js       draw / drawOffscreenArrows
+    │   └── ui.js           updateHud / gameLoop / renderMenu/Meta
+    ├── debug.js            调试面板（P1 合并）
+    └── tests/              vitest 6 用例（helpers.js 按新顺序加载）
 ```
+
+- **单仓**：`Pigeon` 已归档为 `debug.html`，`Pages` 部署 `web/rougelike` 根即为正式版（`npx wrangler pages deploy web/rougelike --project-name rougelike-13h`）
+- **双轨**：`file://` 11 脚本直开 + `npx serve` http + `npm test/lint` ESM 工具链
 
 ## 开发说明
 
-- 无构建步骤、无依赖，原生 HTML/CSS/JS，可直接修改刷新
-- JS 文件为顶层共享作用域，按固定顺序加载，**新增 JS 文件时请保持依赖顺序**（`00` → `11`）
-- 快捷键：`P` / `Esc` 暂停，`M` 静音，空格暂停/继续，全屏按钮在右下角
+- 顶层共享作用域，按 `index.html` 顺序加载，新增文件保持依赖顺序（`00` → `game/ui`）
+- 快捷键：`P/Esc` 暂停，`M` 静音，`F1` 调试面板
+- 存档签名 `META_SALT`，篡改自动清除
