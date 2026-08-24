@@ -19,8 +19,8 @@
                     desc: (lv) => '生命每损失 1%，伤害 +' + relicRate('relic_last_stand', lv) + '%（满血无加成，血量越低伤害越高；每级+0.10%）' },
                 { id: 'relic_phantom_step', name: '幻影步', icon: 'wind', cost: 360, maxLevel: 2, upgradeCost: 480, rate: [0.15, 0.25],
                     desc: (lv) => '受到伤害时有 ' + Math.round(relicRate('relic_phantom_step', lv) * 100) + '% 概率完全闪避（持续伤害不可闪避；每级+10%）' },
-                { id: 'relic_shadow_clone', name: '影子分身', icon: 'ghost', cost: 450, maxLevel: 3, upgradeCost: 550, rate: [2.0, 1.5, 1.1],
-                    desc: (lv) => '召唤暗影分身环绕自身，每 ' + relicRate('relic_shadow_clone', lv) + ' 秒向最近的敌人发射暗影弹（伤害随人物等级成长；升级缩短射击间隔）' },
+                { id: 'relic_shadow_clone', name: '影侍守卫', icon: 'shield-half', cost: 450,
+                    desc: '受击时60%概率使周围敌人眩晕0.8秒并减速40%（1.5秒）；每10秒向最近的2个敌人释放影袭，造成30+等级×2伤害' },
                 { id: 'relic_time_stop', name: '时停领域', icon: 'clock', cost: 520, maxLevel: 3, upgradeCost: 640, rate: [45, 35, 25],
                     desc: (lv) => '每隔 ' + relicRate('relic_time_stop', lv) + ' 秒冻结全场所有敌人 2 秒（含 Boss；升级缩短触发间隔）' },
                 { id: 'relic_deathmark', name: '死神之指', desc: '解锁死神之指：标记目标并抹杀（手动可标记 Boss）', icon: 'skull', cost: 5999 }

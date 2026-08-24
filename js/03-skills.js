@@ -233,9 +233,9 @@
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'magic_missile'); if (w) { w.evolved = 'fireball'; w.damageMultiplier = (w.damageMultiplier || 1) * 1.4; w.projectileSpeed *= 1.30; w.splashRadius = (w.splashRadius || 30) * 1.3; } }
                 },
                 {
-                    id: 'evo_orbit', name: '剑刃风暴', icon: 'swords', desc: '飞刃+5，转速+50%，命中间隔大幅缩短', maxLevel: 1, color: '#44aaff',
+                    id: 'evo_orbit', name: '剑刃风暴', icon: 'swords', desc: '飞刃+3，转速+50%，命中间隔大幅缩短', maxLevel: 1, color: '#44aaff',
                     applies: (p) => { const w = p.weapons.find(w => w.type === 'orbit_blade'); return w && (p['_skill_orbit_count'] || 0) >= 4 && (p['_skill_orbit_damage'] || 0) >= 4 && (p['_skill_orbit_speed'] || 0) >= 3 && !p['_skill_evo_orbit']; },
-                    apply: (p) => { const w = p.weapons.find(w => w.type === 'orbit_blade'); if (w) { w.evolved = 'blade_storm'; w.bladeCount += 5; w.radius = 70; w.rotationSpeed *= 1.5; w.hitCdTime = Math.max(0.1, (w.hitCdTime || 0.28) - 0.18); } }
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'orbit_blade'); if (w) { w.evolved = 'blade_storm'; w.bladeCount += 3; w.radius = 70; w.rotationSpeed *= 1.5; w.hitCdTime = Math.max(0.1, (w.hitCdTime || 0.28) - 0.18); } }
                 },
                 {
                     id: 'evo_frost', name: '极寒领域', icon: 'snowflake', desc: '范围+30%，减速70%，冻结0.8秒', maxLevel: 1, color: '#00ccff',

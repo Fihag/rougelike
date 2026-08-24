@@ -281,25 +281,29 @@
                             }
                         }
                     }
-                    // 影子分身：环绕玩家旋转，按圣物等级间隔向最近敌人发射暗影弹
-                    if (player.relicClone) {
-                        const cInt = relicRate('relic_shadow_clone') || 2.0;
-                        game.cloneAngle = (game.cloneAngle || 0) + cappedDt * 2;
-                        const cr = player.size + 30;
+                    // 影侍守卫：跟随玩家，每10秒向最近2个敌人释放影袭
+                    if (player.relicGuard || player.relicClone) {
+                        game.cloneAngle = (game.cloneAngle || 0) + cappedDt * 0.9;
+                        const cr = player.size + 34;
                         game.cloneX = player.x + Math.cos(game.cloneAngle) * cr;
                         game.cloneY = player.y + Math.sin(game.cloneAngle) * cr;
-                        game.cloneTimer = (game.cloneTimer === undefined ? cInt : game.cloneTimer) - cappedDt;
+                        game.cloneTimer = (game.cloneTimer === undefined ? 10 : game.cloneTimer) - cappedDt;
                         if (game.cloneTimer <= 0) {
-                            const target = player.getNearestEnemy();
-                            if (target) {
-                                game.cloneTimer = cInt;
-                                const ang = Math.atan2(target.y - game.cloneY, target.x - game.cloneX);
-                                const spd = 320;
-                                const dmg = (12 + player.level * 2) * (player.globalDamageMultiplier || 1) * player.getRiskMult() * player.getLowHpMult();
-                                game.projectiles.push(new Projectile(game.cloneX, game.cloneY, Math.cos(ang) * spd, Math.sin(ang) * spd, dmg, 0, 0, '#b06cff', 4));
+                            const alive = game.enemies.filter(e => e.alive && !e.deathMarked && !e.dying);
+                            if (alive.length > 0) {
+                                game.cloneTimer = 10;
+                                alive.sort((a, b) => Math.hypot(a.x - game.cloneX, a.y - game.cloneY) - Math.hypot(b.x - game.cloneX, b.y - game.cloneY));
+                                const targets = alive.slice(0, 2);
+                                for (const target of targets) {
+                                    const ang = Math.atan2(target.y - game.cloneY, target.x - game.cloneX);
+                                    const spd = 340;
+                                    const dmg = (30 + player.level * 2) * (player.globalDamageMultiplier || 1) * player.getRiskMult() * player.getLowHpMult();
+                                    game.projectiles.push(new Projectile(game.cloneX, game.cloneY, Math.cos(ang) * spd, Math.sin(ang) * spd, dmg, 0, 0, '#7a3aff', 5));
+                                }
                                 sound.play('shoot');
+                                spawnParticles(game.cloneX, game.cloneY, 8, '#7a3aff', 70, 0.35, 3);
                             } else {
-                                game.cloneTimer = 0; // 无目标保持待发，出现敌人立刻射击
+                                game.cloneTimer = 0;
                             }
                         }
                     }
@@ -575,18 +579,20 @@
                         if (enemy.deathMarked) drawDeathMark(ctx, enemy);
                     }
                 }
-                // 影子分身绘制（半透明暗紫灵体，随玩家移动呼吸浮动）
-                if (game.player && game.player.relicClone && game.cloneX !== undefined) {
+                // 影侍守卫绘制（盾卫形态，与精灵区分）
+                if (game.player && (game.player.relicGuard || game.player.relicClone) && game.cloneX !== undefined) {
                     const bob = Math.sin(game.time * 5) * 2;
                     const cx = game.cloneX, cy = game.cloneY + bob;
-                    ctx.globalAlpha = 0.55;
-                    ctx.fillStyle = '#3a2060';
-                    ctx.beginPath(); ctx.arc(cx, cy, 9, 0, Math.PI * 2); ctx.fill();
-                    ctx.globalAlpha = 0.85;
-                    ctx.strokeStyle = '#b06cff'; ctx.lineWidth = 1.5;
-                    ctx.beginPath(); ctx.arc(cx, cy, 9, 0, Math.PI * 2); ctx.stroke();
-                    ctx.fillStyle = '#d8b0ff';
-                    ctx.fillRect(cx - 4, cy - 3, 2.5, 2.5); ctx.fillRect(cx + 1.5, cy - 3, 2.5, 2.5);
+                    ctx.globalAlpha = 0.60;
+                    ctx.fillStyle = '#2a3a5a';
+                    ctx.beginPath(); ctx.arc(cx, cy, 10, 0, Math.PI * 2); ctx.fill();
+                    ctx.globalAlpha = 0.90;
+                    ctx.strokeStyle = '#88aaff'; ctx.lineWidth = 1.8;
+                    ctx.beginPath(); ctx.arc(cx, cy, 10, 0, Math.PI * 2); ctx.stroke();
+                    ctx.fillStyle = '#cce0ff';
+                    ctx.fillRect(cx - 5, cy - 4, 3, 3); ctx.fillRect(cx + 2, cy - 4, 3, 3);
+                    // 胸口盾徽
+                    ctx.fillStyle = '#88aaff'; ctx.beginPath(); ctx.arc(cx, cy + 3, 3, 0, Math.PI * 2); ctx.fill();
                     ctx.globalAlpha = 1;
                 }
                 if (game.player) game.player.draw(ctx);

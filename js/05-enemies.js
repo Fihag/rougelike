@@ -338,7 +338,10 @@
 
                 applySlow(amount, duration) {
                     if (this.typeKey === 'assassin') return;
-                    if (this.isBoss) amount = Math.max(0, amount - 0.40);
+                    let slowReduce = 0;
+                    if (this.isBoss) slowReduce = 0.40 + (game.selectedDifficulty === 'impossible' ? 0.10 : 0);
+                    else if (game.selectedDifficulty === 'impossible') slowReduce = 0.20;
+                    if (slowReduce > 0) amount = Math.max(0, amount - slowReduce);
                     if (amount > this.slowAmount || this.slowTimer <= 0) this.slowAmount = amount;
                     this.slowTimer = Math.max(this.slowTimer, duration);
                 }

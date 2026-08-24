@@ -91,6 +91,24 @@
                             return;
                         }
                     }
+                    // 影侍守卫：受击时60%概率使周围敌人眩晕0.8秒并减速40%（1.5秒）
+                    if ((this.relicGuard || this.relicClone) && !ignoreInvincible && Math.random() < 0.60) {
+                        let stunned = 0;
+                        for (const e of game.enemies) {
+                            if (!e.alive) continue;
+                            if (Math.hypot(e.x - this.x, e.y - this.y) < 90 + e.size) {
+                                e.stunTimer = Math.max(e.stunTimer || 0, 0.8);
+                                e.freezeTimer = Math.max(e.freezeTimer || 0, 0.8);
+                                e.applySlow(0.40, 1.5);
+                                stunned++;
+                            }
+                        }
+                        if (stunned > 0) {
+                            spawnParticles(this.x, this.y, 10, '#b06cff', 90, 0.4, 3);
+                            game.rings.push({ x: this.x, y: this.y, r: 12, maxR: 90, life: 0.35, maxLife: 0.35, color: '#b06cff', width: 4 });
+                            sound.play('shield');
+                        }
+                    }
                     let dmg = amount * (1 - this.damageReduction) * (this.damageTakenMultiplier || 1);
                     dmg = Math.max(1, Math.round(dmg) - this.flatArmor);
                     this.hp -= dmg;

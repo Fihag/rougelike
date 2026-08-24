@@ -161,8 +161,9 @@
                 game.player.relicDodgeChance = isRelicActive('relic_phantom_step') ? (relicRate('relic_phantom_step') || 0.15) : 0;
                 // 背水一战：低血增伤系数开局缓存（避免每次伤害计算遍历查找）
                 game.player.relicLastStandRate = isRelicActive('relic_last_stand') ? (relicRate('relic_last_stand') || 0.25) : 0;
-                // 影子分身 / 时停领域（计时状态挂在 game 上）
-                game.player.relicClone = isRelicActive('relic_shadow_clone');
+                // 影侍守卫 / 时停领域（计时状态挂在 game 上）
+                game.player.relicGuard = isRelicActive('relic_shadow_clone');
+                game.player.relicClone = game.player.relicGuard; // 兼容旧名
                 game.player.relicTimeStop = isRelicActive('relic_time_stop');
                 // 开局护盾圣物（可升级，仅穿戴生效）：采用灵魂护盾机制，护盾量/恢复时间随等级成长
                 const shieldLv = isRelicActive('relic_shield_start') ? relicLevel('relic_shield_start') : 0;
@@ -180,8 +181,8 @@
                 // 定时炸弹：穿戴时首爆固定在开局 10 秒后（此前提前赋值被下方清零覆盖，导致开局瞬间即爆）
                 game.bombTimer = game.player.relicBomb ? 10 : 0;
                 game.altars = []; game.altarTimer = 45;
-                // 影子分身/时停领域计时器复位（时停首次触发按当前圣物等级间隔）
-                game.cloneTimer = 1.5; game.cloneAngle = 0; game.cloneX = undefined; game.cloneY = undefined;
+                // 影侍守卫/时停领域计时器复位
+                game.cloneTimer = 10; game.cloneAngle = 0; game.cloneX = undefined; game.cloneY = undefined;
                 if (game.player.relicTimeStop) {
                     game.timeStopTimer = relicRate('relic_time_stop') || 45;
                 } else { game.timeStopTimer = 0; }
