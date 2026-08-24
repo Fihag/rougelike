@@ -33,9 +33,6 @@
             }
 
             function spawnWaveElites() {
-                // 清除场上普通小怪，刷新精英（强化怪）
-                for (const e of game.enemies) if (!e.isBoss) e.alive = false;
-                game.enemies = game.enemies.filter(e => e.alive);
                 game.waveState = 'active';
                 game.waveEliteLeft = WAVE_ELITE_COUNT;
                 const spawnBatch = () => {
