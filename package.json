@@ -7,8 +7,6 @@
     "dev": "npx serve .",
     "dev:vite": "vite",
     "serve": "npx serve . -l 8123",
-    "build": "vite build",
-    "preview": "vite preview",
     "lint": "eslint . --ext .js",
     "lint:fix": "eslint . --ext .js --fix",
     "format": "prettier --write \"**/*.{js,json,css,html,md}\"",

@@ -14,12 +14,11 @@
 # 零构建：双击 index.html 即可（file://）
 # 或
 npx serve web/rougelike -l 8123   # http
-npx vite --open                   # ESM 热更新（可选）
+npx vite --open                   # ESM 热更新（可选，经典脚本直加载）
 # 开发校验
 npm install
-npm test        # vitest 6 用例
+npm test        # vitest 15 用例（冒烟 + 运行时帧模拟）
 npm run lint    # eslint
-npm run build   # vite 产 dist/
 ```
 
 ## 游戏玩法
