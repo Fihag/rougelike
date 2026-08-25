@@ -13,11 +13,13 @@
 ```bash
 # 零构建：双击 index.html 即可（file://）
 # 或
-npx serve web/rougelike -l 8123
-# 开发校验（可选）
+npx serve web/rougelike -l 8123   # http
+npx vite --open                   # ESM 热更新（可选）
+# 开发校验
 npm install
 npm test        # vitest 6 用例
 npm run lint    # eslint
+npm run build   # vite 产 dist/
 ```
 
 ## 游戏玩法
@@ -38,6 +40,7 @@ web/rougelike/
 ├── index.html              正式版入口（13 脚本按序，file:// 可双击）
 ├── debug.html              调试版入口（+ debug.js/panel，仅本地）
 ├── css/
+│   ├── tokens.css        设计 token（P4）
 │   ├── base.css
 │   ├── hud.css
 │   ├── panels.css
@@ -56,7 +59,10 @@ web/rougelike/
     │   └── draw.js         Enemy.draw + 特效
     ├── 06-player.js        玩家（影侍守卫受击 60% 触发）
     ├── 07-projectiles.js   弹道（8s/120px）
-    ├── 08-upgrades.js      升级/精灵/影侍跟随
+    ├── upgrades/           08-upgrades 拆分（P4）
+    │   ├── choices.js      升级选项
+    │   ├── init.js         initGame
+    │   └── weapons.js      武器更新/绘制
     ├── 09-deathmark.js     死神之指（60 半径）
     ├── 10-events.js        波次/祭坛/刷怪（精英不清场）
     ├── game/               11-game 拆分（P2）
@@ -64,6 +70,7 @@ web/rougelike/
     │   ├── render.js       draw / drawOffscreenArrows
     │   └── ui.js           updateHud / gameLoop / renderMenu/Meta
     ├── debug.js            调试面板（P1 合并）
+    ├── vite.config.js      Vite 双轨（P4）
     └── tests/              vitest 6 用例（helpers.js 按新顺序加载）
 ```
 

@@ -189,7 +189,8 @@ module.exports = {
     { files: ["js/**/*.js"], rules: { "no-unused-vars": "off" } },
     { files: ["js/game/**/*.js"], rules: { "no-undef": "off" } },
     { files: ["js/enemies/**/*.js"], rules: { "no-undef": "off" } },
+    { files: ["js/upgrades/**/*.js"], rules: { "no-undef": "off" } },
     { files: ["tests/**/*.js"], env: { node: true }, parserOptions: { sourceType: "module" } },
-    { files: ["vitest.config.js"], parserOptions: { sourceType: "module" }, env: { node: true } },
+    { files: ["vite.config.js"], parserOptions: { sourceType: "module" }, env: { node: true } },
   ],
 };
