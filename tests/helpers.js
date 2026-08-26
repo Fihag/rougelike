@@ -84,11 +84,11 @@ function makeEl() {
 export function loadGame() {
   const store = new Map();
   const localStorageStub = {
-    getItem: (k) => (store.has(k) ? store.get(k) : null),
+    getItem: k => (store.has(k) ? store.get(k) : null),
     setItem: (k, v) => {
       store.set(k, String(v));
     },
-    removeItem: (k) => {
+    removeItem: k => {
       store.delete(k);
     },
   };
@@ -171,7 +171,7 @@ export function loadGame() {
     const code = readFileSync(join(process.cwd(), "js", f), "utf8");
     runInContext(code, sandbox, { filename: f });
   }
-  const R = (expr) => runInContext(expr, sandbox);
+  const R = expr => runInContext(expr, sandbox);
   R(`initGame(); game.state='playing'; game.enemies.length=0; game.altars.length=0; game.chests.length=0;`);
   R(`game.player.x=WORLD_W/2; game.player.y=WORLD_H/2; cam.x=game.player.x-W/2; cam.y=game.player.y-H/2;`);
   return { sandbox, R };

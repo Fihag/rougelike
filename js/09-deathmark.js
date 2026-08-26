@@ -87,8 +87,9 @@
                         dm.targets.splice(i, 1);
                     }
                 }
-                // 各目标抹杀计时
-                for (const t of dm.targets) {
+                // 各目标抹杀计时（倒序遍历：dmResolve 会从 targets 中 splice，正序会跳过同帧到期的下一个）
+                for (let i = dm.targets.length - 1; i >= 0; i--) {
+                    const t = dm.targets[i];
                     t.dmTimer += dt;
                     if (t.dmTimer >= dm.markDuration) {
                         dmResolve(t);

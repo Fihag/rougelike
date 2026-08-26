@@ -361,6 +361,15 @@
                 });
             }
             // ===== 暂停面板：返回主菜单（结算本局碎片） =====
+            let menuHintTimer = null;
+            function showMenuHint(msg) {
+                const mh = $inp('menu-hint');
+                if (!mh) return;
+                mh.textContent = msg;
+                mh.style.color = '#ffd166';
+                clearTimeout(menuHintTimer);
+                menuHintTimer = setTimeout(() => { mh.textContent = '键鼠 / 触屏均可操作'; mh.style.color = ''; }, 2200);
+            }
             if (pauseMenuBtn) {
                 pauseMenuBtn.addEventListener('click', () => {
                     if (game.state !== 'playing') return;
@@ -369,10 +378,8 @@
                     btnPause.innerHTML = ICONS.pause;
                     const dbgPauseEl = $inp('dbg-pause'); if (dbgPauseEl) dbgPauseEl.checked = false;
                     showMenu();
-                    if (got > 0) {
-                        game.warningText = `已结算 ${got} 灵魂碎片`;
-                        game.warningTimer = 1.5;
-                    }
+                    // menu 态下 hudWarning 不渲染，结算提示走主菜单 hint 位
+                    if (got > 0) showMenuHint('本局已结算 +' + got + ' 灵魂碎片');
                 });
             }
             // ===== 暂停面板：重新开始本局（结算后直接重开） =====

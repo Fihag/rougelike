@@ -173,6 +173,7 @@ module.exports = {
     update: "readonly",
     draw: "readonly",
     drawOffscreenArrows: "readonly",
+    updateHud: "readonly",
     renderMenu: "readonly",
     renderMetaPanel: "readonly",
     screenShake: "writable",
@@ -187,9 +188,6 @@ module.exports = {
   },
   overrides: [
     { files: ["js/**/*.js"], rules: { "no-unused-vars": "off" } },
-    { files: ["js/game/**/*.js"], rules: { "no-undef": "off" } },
-    { files: ["js/enemies/**/*.js"], rules: { "no-undef": "off" } },
-    { files: ["js/upgrades/**/*.js"], rules: { "no-undef": "off" } },
     { files: ["tests/**/*.js"], env: { node: true }, parserOptions: { sourceType: "module" } },
     { files: ["vite.config.js"], parserOptions: { sourceType: "module" }, env: { node: true } },
   ],

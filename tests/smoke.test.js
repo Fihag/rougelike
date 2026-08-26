@@ -39,7 +39,9 @@ describe("魔法幸存者 · 基础数值回归", () => {
 describe("死神之指手动点击", () => {
   it("屏幕坐标+cam 命中世界坐标", () => {
     const { R } = loadGame();
-    R(`game.deathMark.enabled=true; game.deathMark.mode='manual'; game.deathMark.targets=[]; game.enemies.length=0; cam.x=400; cam.y=300; var e=new Enemy(800,800,'zombie',0); e.x=800; e.y=800; game.enemies.push(e);`);
+    R(
+      `game.deathMark.enabled=true; game.deathMark.mode='manual'; game.deathMark.targets=[]; game.enemies.length=0; cam.x=400; cam.y=300; var e=new Enemy(800,800,'zombie',0); e.x=800; e.y=800; game.enemies.push(e);`
+    );
     expect(R(`dmTrySelectAt(400+cam.x,500+cam.y)===true && game.deathMark.targets.length===1`)).toBe(true);
   });
 });

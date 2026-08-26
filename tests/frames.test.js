@@ -112,7 +112,8 @@ describe("魔法幸存者 · 运行时帧模拟（重构回归）", () => {
   it("升级面板 / Boss掉落 / 死神之指购买 不抛错", () => {
     const { R } = loadGame();
     R(`initGame(); game.state='playing';`);
-    expect(() => R(`
+    expect(() =>
+      R(`
       const ch1 = generateUpgradeChoices(game.player);
       if (!ch1.length) throw new Error('no choices');
       showLevelupPanel(ch1); game.applyUpgrade(ch1[0]);
@@ -123,7 +124,8 @@ describe("魔法幸存者 · 运行时帧模拟（重构回归）", () => {
       if (!r) throw new Error('relic_deathmark missing');
       if (!buyRelic(r.id)) throw new Error('buyRelic failed with enough shards');
       loadMeta();
-    `)).not.toThrow();
+    `)
+    ).not.toThrow();
     expect(R(`relicLevel("relic_deathmark")`)).toBe(1);
     expect(R(`isRelicActive("relic_deathmark")`)).toBe(true);
   });
