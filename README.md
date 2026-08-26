@@ -36,7 +36,7 @@ npm run lint    # eslint
 
 ```
 web/rougelike/
-├── index.html              正式版入口（13 脚本按序，file:// 可双击）
+├── index.html              正式版入口（19 脚本按序，file:// 可双击）
 ├── debug.html              调试版入口（+ debug.js/panel，仅本地）
 ├── css/
 │   ├── tokens.css        设计 token（P4）
@@ -54,8 +54,8 @@ web/rougelike/
     ├── enemies/            05-enemies 拆分（P3）
     │   ├── types.js        ENEMY_TYPES / BOSS_DROP
     │   ├── core.js         Enemy 构造/减伤/护盾
-    │   ├── update.js       Enemy.update + 熔岩/母皇/刺客逻辑
-    │   └── draw.js         Enemy.draw + 特效
+    │   ├── update.js       Enemy.update + Boss 技能行为（濒死爆燃/剑气/闪现/影刃）
+    │   └── draw.js         Enemy.draw + 特效绘制
     ├── 06-player.js        玩家（影侍守卫受击 60% 触发）
     ├── 07-projectiles.js   弹道（8s/120px）
     ├── upgrades/           08-upgrades 拆分（P4）
@@ -68,9 +68,9 @@ web/rougelike/
     │   ├── update.js       主循环 update
     │   ├── render.js       draw / drawOffscreenArrows
     │   └── ui.js           updateHud / gameLoop / renderMenu/Meta
-    ├── debug.js            调试面板（P1 合并）
-    ├── vite.config.js      Vite 双轨（P4）
-    └── tests/              vitest 6 用例（helpers.js 按新顺序加载）
+    └── debug.js            调试面板（P1 合并，仅 debug.html 加载）
+vite.config.js              Vite 双轨（P4，dev:vite 热更新；经典脚本不可打包，勿部署 dist）
+tests/                      vitest 15 用例（helpers.js 按新顺序加载）
 ```
 
 - **单仓**：`Pigeon` 已归档为 `debug.html`，`Pages` 部署 `web/rougelike` 根即为正式版（`npx wrangler pages deploy web/rougelike --project-name rougelike-13h`）

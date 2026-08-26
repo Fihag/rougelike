@@ -48,10 +48,11 @@ describe("魔法幸存者 · 运行时帧模拟（重构回归）", () => {
       as.teleportTX = 300; as.teleportTY = 500; as.teleportTimer = 0;
       game.enemies.push(as);
       const bm = new Enemy(800, 300, 'broodmother', 7);
-      bm.minionTimer = 0; bm.minionPhase = 2;
+      bm.summonTimer = 0; bm.acidTimer = 0;
       game.enemies.push(bm);
-      const br = new Enemy(500, 500, 'brute', 7);
-      br.chargeTimer = 0; game.enemies.push(br);
+      const lv = new Enemy(500, 500, 'lavabeast', 7);
+      lv.lavaChargeTimer = 0; lv.lavaEruptTimer = 0;
+      game.enemies.push(lv);
     `);
     for (let i = 0; i < 300; i++) {
       expect(() => R(`update(1/60)`)).not.toThrow();
@@ -117,11 +118,14 @@ describe("魔法幸存者 · 运行时帧模拟（重构回归）", () => {
       showLevelupPanel(ch1); game.applyUpgrade(ch1[0]);
       game.state='bossdrop';
       showBossDropPanel(BOSS_DROP_ITEMS.slice(0,3)); applyBossDrop(BOSS_DROP_ITEMS[0]);
-      metaData.shards = 500; saveMeta();
-      const r = META_RELICS.find(x => x.id === 'relic_death_mark');
-      if (r) buyRelic(r.id);
+      metaData.shards = 6000; saveMeta();
+      const r = META_RELICS.find(x => x.id === 'relic_deathmark');
+      if (!r) throw new Error('relic_deathmark missing');
+      if (!buyRelic(r.id)) throw new Error('buyRelic failed with enough shards');
       loadMeta();
     `)).not.toThrow();
+    expect(R(`relicLevel("relic_deathmark")`)).toBe(1);
+    expect(R(`isRelicActive("relic_deathmark")`)).toBe(true);
   });
 
   it("debug.js 加载 + dbgInit + 面板操作 不抛错", () => {
