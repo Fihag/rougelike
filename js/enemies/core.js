@@ -262,6 +262,8 @@
                             game.player.hp = Math.min(game.player.maxHp, game.player.hp + game.player.maxHp * 0.3);
                             spawnParticles(game.player.x, game.player.y, 20, '#ffd700', 80, 0.6, 6);
                             game.bossOnField = false;
+                            // 成就「不死鸟」判定锚点：击杀 Boss 时的时间戳（低血窗口内击杀才达成）
+                            game.lastBossKillTime = game.time;
                             // 重置生成计时：避免 Boss 死亡瞬间（bossTimer 已走完）立刻再刷下一只
                             game.bossTimer = (DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal).bossRespawn;
                             // 暗黑镜像延迟 20 秒后才可召唤，避免 Boss 死亡后立即刷出（曾表现为"刺客重新刷新"）

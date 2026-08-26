@@ -48,6 +48,7 @@
                     game.timeStopTimer = relicRate('relic_time_stop') || 45;
                 } else { game.timeStopTimer = 0; }
                 game.superBossSpawned = false; game.bossKilledCount = 0;
+                game.lastBossKillTime = undefined;
                 game.achievements = {};
                 game.enemies = []; game.projectiles = []; game.experienceOrbs = [];
                 particles = []; damageNumbers = [];

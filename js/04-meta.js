@@ -69,8 +69,9 @@
                     const evoCount = game.player.weapons.filter(w => w.evolved).length;
                     if (evoCount >= 3) awardAchievement('collector');
                 }
-                // 不死鸟：血量低于 10% 时击杀 Boss
-                if (!achievementsDone.phoenix && game.player.hp < game.player.maxHp * 0.1 && game.bossKilledCount > 0) awardAchievement('phoenix');
+                // 不死鸟：低血（<10%）状态下击杀 Boss（以击杀后 3 秒内仍低血近似判定）
+                if (!achievementsDone.phoenix && game.player.hp < game.player.maxHp * 0.1
+                    && game.lastBossKillTime !== undefined && game.time - game.lastBossKillTime <= 3) awardAchievement('phoenix');
                 // 近战大师：仅用飞刃/冰霜击杀 Boss
                 if (!achievementsDone.melee_master) {
                     const hasRanged = game.player.weapons.some(w => w.type !== 'orbit_blade' && w.type !== 'frost_nova');

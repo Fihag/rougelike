@@ -3,9 +3,9 @@
             const MAX_LEVEL = 100;
             const START_WEAPON_DEFS = {
                 magic_missile:   () => ({ type: 'magic_missile', level: 1, cooldown: 0, cooldownTime: 0.85, cooldownMultiplier: 1, damage: 21, damageMultiplier: 1, projectileSpeed: 350, extraProjectiles: 0, splashRadius: 28, splashDamagePercent: 0.35 }),
-                orbit_blade:     () => ({ type: 'orbit_blade', level: 1, bladeCount: 3, radius: 60, rotationSpeed: 3.0, damage: 26, damageMultiplier: 1, angle: 0, hitCooldowns: new Map(), hitCdTime: 0.28 }),
+                orbit_blade:     () => ({ type: 'orbit_blade', level: 1, bladeCount: 3, radius: 60, rotationSpeed: 3.0, damage: 26, damageMultiplier: 1, angle: 0, hitCdTime: 0.28 }),
                 frost_nova:      () => ({ type: 'frost_nova', level: 1, cooldown: 0, cooldownTime: 2.2, radius: 130, damage: 32, damageMultiplier: 1, slowAmount: 0.50, slowDuration: 2.2 }),
-                lightning_chain: () => ({ type: 'lightning_chain', level: 1, cooldown: 0, cooldownTime: 0.95, damage: 20, damageMultiplier: 1, bounceCount: 1, bounceRange: 120, damageFalloff: 0.3, hitCooldowns: new Map(), hitCdTime: 0.25 }),
+                lightning_chain: () => ({ type: 'lightning_chain', level: 1, cooldown: 0, cooldownTime: 0.95, damage: 20, damageMultiplier: 1, bounceCount: 1, bounceRange: 120, damageFalloff: 0.3, hitCdTime: 0.25 }),
                 meteor:          () => ({ type: 'meteor', level: 1, cooldown: 0, cooldownTime: 5.0, damage: 110, damageMultiplier: 1, radius: 100, doubleChance: 0 }),
                 shadow_spirit:   () => ({ type: 'shadow_spirit', level: 1, spiritCount: 2, damage: 13, damageMultiplier: 1, attackSpeed: 1.2625, attackSpeedMultiplier: 1, slowChance: 0, slowAmount: 0.3, slowDuration: 1.5, attackTimer: 0, lockReduction: 0 })
             };
@@ -50,7 +50,7 @@
                     apply: (p) => {
                         p.weapons.push({
                             type: 'orbit_blade', level: 1, bladeCount: 3, radius: 60, rotationSpeed: 3.0,
-                            damage: 26, damageMultiplier: 1, angle: 0, hitCooldowns: new Map(), hitCdTime: 0.28
+                            damage: 26, damageMultiplier: 1, angle: 0, hitCdTime: 0.28
                         });
                     }
                 },
@@ -127,7 +127,7 @@
                         p.weapons.push({
                             type: 'lightning_chain', level: 1, cooldown: 0, cooldownTime: 0.95,
                             damage: 20, damageMultiplier: 1, bounceCount: 1, bounceRange: 120,
-                            damageFalloff: 0.3, hitCooldowns: new Map(), hitCdTime: 0.25
+                            damageFalloff: 0.3, hitCdTime: 0.25
                         });
                     }
                 },
